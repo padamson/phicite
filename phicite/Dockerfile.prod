@@ -1,0 +1,78 @@
+###########
+# BUILDER #
+###########
+
+# pull official base image
+FROM python:3.13-alpine@sha256:452682e4648deafe431ad2f2391d726d7c52f0ff291be8bd4074b10379bb89ff AS builder
+
+# install system dependencies
+RUN apk update \
+  && apk add netcat-openbsd gcc postgresql \
+  && apk del
+
+# set work directory
+WORKDIR /usr/src/app
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# install dependencies
+RUN pip install --upgrade pip
+COPY ./requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+
+# lint
+COPY . /usr/src/app/
+RUN pip install ruff==0.11.7
+RUN ruff check .
+
+
+#########
+# FINAL #
+#########
+
+# pull official base image
+FROM python:3.13-alpine@sha256:452682e4648deafe431ad2f2391d726d7c52f0ff291be8bd4074b10379bb89ff
+
+# create directory for the app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN addgroup --system app && adduser -S -G app app
+
+# create the appropriate directories
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+WORKDIR $APP_HOME
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV ENVIRONMENT=prod
+ENV TESTING=0
+
+# install system dependencies
+RUN apk update \
+  && apk add netcat-openbsd gcc postgresql \
+  && apk del
+
+# install python dependencies
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+RUN pip install "uvicorn[standard]==0.34.1"
+
+# add app
+COPY . .
+
+# chown all the files to the app user
+RUN chown -R app:app $HOME
+
+# change to the app user
+USER app
+
+# run gunicorn
+CMD gunicorn --bind 0.0.0.0:$PORT app.main:app -k uvicorn.workers.UvicornWorker

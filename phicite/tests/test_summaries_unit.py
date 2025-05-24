@@ -12,7 +12,7 @@ def test_create_summary(test_app, monkeypatch):
 
     async def mock_post(payload):
         return 1
-    monkeypatch.setattr(crud, "post", mock_post)
+    monkeypatch.setattr(crud, "post_summary", mock_post)
 
     def mock_generate_summary(summary_id, url):
         return None
@@ -35,7 +35,7 @@ def test_read_summary(test_app, monkeypatch):
     async def mock_get(id):
         return test_data
 
-    monkeypatch.setattr(crud, "get", mock_get)
+    monkeypatch.setattr(crud, "get_summary", mock_get)
 
     response = test_app.get("/summaries/1/")
     assert response.status_code == 200
@@ -46,7 +46,7 @@ def test_read_summary_incorrect_id(test_app, monkeypatch):
     async def mock_get(id):
         return None
 
-    monkeypatch.setattr(crud, "get", mock_get)
+    monkeypatch.setattr(crud, "get_summary", mock_get)
 
     response = test_app.get("/summaries/999/")
     assert response.status_code == 404
@@ -72,7 +72,7 @@ def test_read_all_summaries(test_app, monkeypatch):
     async def mock_get_all():
         return test_data
 
-    monkeypatch.setattr(crud, "get_all", mock_get_all)
+    monkeypatch.setattr(crud, "get_all_summaries", mock_get_all)
 
     response = test_app.get("/summaries/")
     assert response.status_code == 200
@@ -87,12 +87,12 @@ def test_remove_summary(test_app, monkeypatch):
             "created_at": datetime.utcnow().isoformat(),
         }
 
-    monkeypatch.setattr(crud, "get", mock_get)
+    monkeypatch.setattr(crud, "get_summary", mock_get)
 
     async def mock_delete(id):
         return id
 
-    monkeypatch.setattr(crud, "delete", mock_delete)
+    monkeypatch.setattr(crud, "delete_summary", mock_delete)
 
     response = test_app.delete("/summaries/1/")
     assert response.status_code == 200
@@ -103,7 +103,7 @@ def test_remove_summary_incorrect_id(test_app, monkeypatch):
     async def mock_get(id):
         return None
 
-    monkeypatch.setattr(crud, "get", mock_get)
+    monkeypatch.setattr(crud, "get_summary", mock_get)
 
     response = test_app.delete("/summaries/999/")
     assert response.status_code == 404
@@ -121,7 +121,7 @@ def test_update_summary(test_app, monkeypatch):
     async def mock_put(id, payload):
         return test_response_payload
 
-    monkeypatch.setattr(crud, "put", mock_put)
+    monkeypatch.setattr(crud, "put_summary", mock_put)
 
     response = test_app.put("/summaries/1/", data=json.dumps(test_request_payload),)
     assert response.status_code == 200
@@ -192,7 +192,7 @@ def test_update_summary_invalid(test_app, monkeypatch, summary_id, payload, stat
     async def mock_put(id, payload):
         return None
 
-    monkeypatch.setattr(crud, "put", mock_put)
+    monkeypatch.setattr(crud, "put_summary", mock_put)
 
     response = test_app.put(f"/summaries/{summary_id}/", data=json.dumps(payload))
     assert response.status_code == status_code

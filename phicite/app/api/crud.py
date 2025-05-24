@@ -4,7 +4,7 @@ from app.models.pydantic import SummaryPayloadSchema, SummaryUpdatePayloadSchema
 from app.models.tortoise import TextSummary, PDFHighlight
 
 
-async def post(payload: SummaryPayloadSchema) -> int:
+async def post_summary(payload: SummaryPayloadSchema) -> int:
     summary = TextSummary(
         url=payload.url,
         summary="",
@@ -13,21 +13,21 @@ async def post(payload: SummaryPayloadSchema) -> int:
     return summary.id
 
 
-async def get(id: int) -> Union[dict, None]:
+async def get_summary(id: int) -> Union[dict, None]:
     summary = await TextSummary.filter(id=id).first().values()
     if summary:
         return summary
     return None
 
-async def get_all() -> List:
+async def get_all_summaries() -> List:
     summaries = await TextSummary.all().values()
     return summaries
 
-async def delete(id: int) -> int:
+async def delete_summary(id: int) -> int:
     summary = await TextSummary.filter(id=id).first().delete()
     return summary
 
-async def put(id: int, payload: SummaryUpdatePayloadSchema) -> Union[dict, None]:
+async def put_summary(id: int, payload: SummaryUpdatePayloadSchema) -> Union[dict, None]:
     summary = await TextSummary.filter(id=id).update(url=payload.url, summary=payload.summary)
     if summary:
         updated_summary = await TextSummary.filter(id=id).first().values()

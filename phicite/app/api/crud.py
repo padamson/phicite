@@ -1,7 +1,7 @@
 from typing import Union, List
 
-from app.models.pydantic import SummaryPayloadSchema, SummaryUpdatePayloadSchema
-from app.models.tortoise import TextSummary
+from app.models.pydantic import SummaryPayloadSchema, SummaryUpdatePayloadSchema, HighlightPayloadSchema
+from app.models.tortoise import TextSummary, PDFHighlight
 
 
 async def post(payload: SummaryPayloadSchema) -> int:
@@ -33,3 +33,12 @@ async def put(id: int, payload: SummaryUpdatePayloadSchema) -> Union[dict, None]
         updated_summary = await TextSummary.filter(id=id).first().values()
         return updated_summary
     return None
+
+async def post_citation(payload: HighlightPayloadSchema) -> int:
+    citation = PDFHighlight(
+        doi=payload.doi,
+        highlight=payload.highlight,
+        comment=payload.comment 
+    )
+    await citation.save()
+    return citation.id

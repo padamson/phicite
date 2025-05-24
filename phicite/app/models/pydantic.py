@@ -18,10 +18,17 @@ def is_valid_doi(doi: str) -> str:
     elif doi.startswith("https://doi.org/"):
         doi = doi[16:]
     doi_pattern = r"^10\.\d{4,9}/[-._;()/:A-Za-z0-9]+$"
-    if bool(re.match(doi_pattern, doi)):
-        return doi
-    raise ValueError("Invalid DOI format")
+    if not bool(re.match(doi_pattern, doi)):
+        raise ValueError("Invalid DOI format")
+    return doi
 
 
-class DoiUrl(BaseModel):
+class HighlightPayloadSchema(BaseModel):
     doi: Annotated[str, AfterValidator(is_valid_doi)]
+    highlight: dict
+    comment: str | None = None
+
+
+class HighlightResponseSchema(BaseModel):
+    id: int
+    doi: str

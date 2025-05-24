@@ -1,6 +1,12 @@
+from typing import Annotated
 import pytest
-from pydantic import ValidationError
-from app.models.pydantic import DoiUrl
+from pydantic import ValidationError, AfterValidator, BaseModel
+from app.models.pydantic import is_valid_doi
+
+
+class DoiUrl(BaseModel):
+    doi: Annotated[str, AfterValidator(is_valid_doi)]
+
 
 def test_doi_url_valid_formats():
     """Test that valid DOI formats are accepted."""

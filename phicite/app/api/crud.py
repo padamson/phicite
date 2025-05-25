@@ -48,3 +48,31 @@ async def get_citation(id: int) -> Union[dict, None]:
     if citation:
         return citation
     return None
+
+async def get_all_citations() -> List:
+    citations = await PDFHighlight.all().values()
+    return citations
+
+async def delete_citation(id: int) -> int:
+    citation = await PDFHighlight.filter(id=id).first().delete()
+    return citation
+
+async def put_citation(id: int, payload: HighlightPayloadSchema) -> Union[dict, None]:
+    existing_citation = await PDFHighlight.filter(id=id).first().values()
+    
+    if not existing_citation:
+        return None
+        
+    if existing_citation["doi"] != payload.doi:
+        raise ValueError("DOI does not match existing citation")
+    
+    citation = await PDFHighlight.filter(id=id).update(
+        doi=payload.doi, 
+        highlight=payload.highlight, 
+        comment=payload.comment
+    )
+    
+    if citation:
+        updated_citation = await PDFHighlight.filter(id=id).first().values()
+        return updated_citation
+    return None

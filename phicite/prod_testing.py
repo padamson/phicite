@@ -170,4 +170,33 @@ if doi != "10.1234/example.5678":
 
 test_passed(f"Created citation with ID {citation_id} and DOI {doi}")
 
+# Test citation retrieval
+print_separator(f"Testing GET /citations/{citation_id}/")
+response = requests.get(f"{BASE_URL}/citations/{citation_id}/")
+if response.status_code != 200:
+    test_failed(f"Expected status code 200, got {response.status_code}", response)
+try:
+    data = response.json()
+except json.JSONDecodeError:
+    test_failed("Response is not valid JSON", response)
+if "id" not in data or "doi" not in data or "highlight" not in data:
+    test_failed("Response is missing required fields", response)
+if data["id"] != citation_id:
+    test_failed(f"Expected id {citation_id}, got {data['id']}", response)
+if data["doi"] != "10.1234/example.5678":
+    test_failed(f"Expected doi '10.1234/example.5678', got {data['doi']}", response)
+if data["highlight"] != {
+    "1": {"rect": [100, 200, 300, 220], "text": "first part"},
+    "2": {"rect": [50, 100, 250, 120], "text": "second part"}
+}:
+    test_failed("Highlight data does not match", response)
+if data["comment"] != "This is an important passage":
+    test_failed(f"Expected comment 'This is an important passage', got {data['comment']}", response)
+if data["created_at"] is None:
+    test_failed("Created_at field is missing", response)
+if not isinstance(data["created_at"], str):
+    test_failed("Created_at field is not a string", response)
+
+test_passed(f"Retrieved citation with ID {citation_id}, DOI {doi}, and highlight data matches")
+
 print("\nAll tests passed successfully!")

@@ -63,3 +63,25 @@ def test_create_citation_invalid_json(test_app_with_db):
             }
         ]
     }
+
+def test_read_citation(test_app_with_db):
+    response = test_app_with_db.post(
+        "/citations/",
+        data=json.dumps({
+            "doi": "10.1234/example.5678",
+            "highlight": {
+                "1": {"rect": [100, 200, 300, 220], "text": "first part"},
+                "2": {"rect": [50, 100, 250, 120], "text": "second part"}
+            },
+            "comment": "This is an important passage"
+        })
+    )
+    assert response.status_code == 201
+    citation_id = response.json()["id"]
+    response = test_app_with_db.get(f"/citations/{citation_id}/")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["id"] == citation_id
+    assert response_dict["doi"] == "10.1234/example.5678"
+    assert response_dict["comment"] == "This is an important passage"
+    assert "highlight" in response_dict

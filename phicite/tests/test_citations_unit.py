@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from app.api import crud
 
@@ -24,3 +25,22 @@ def test_create_citation(test_app, monkeypatch):
 
     assert response.status_code == 201
     assert response.json() == test_response_payload
+
+
+def test_read_citation(test_app, monkeypatch):
+    test_data = {
+        "id": 1,
+        "doi": "10.1234/example.5678",
+        "highlight": {"1": {"rect": [100, 200, 300, 220], "text": "highlighted text"}},
+        "comment": "This is an important passage",
+        "created_at": datetime.utcnow().isoformat(),
+    }
+
+    async def mock_get(id):
+        return test_data
+
+    monkeypatch.setattr(crud, "get_citation", mock_get)
+
+    response = test_app.get("/citations/1/")
+    assert response.status_code == 200
+    assert response.json() == test_data

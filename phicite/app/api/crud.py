@@ -42,3 +42,9 @@ async def post_citation(payload: HighlightPayloadSchema) -> int:
     )
     await citation.save()
     return citation.id
+
+async def get_citation(id: int) -> Union[dict, None]:
+    citation = await PDFHighlight.filter(id=id).first().values()
+    if citation:
+        return citation
+    return None

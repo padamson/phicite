@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, UTC
 
 import pytest
 from starlette.testclient import TestClient
@@ -41,3 +42,6 @@ def test_app_with_db():
         yield test_client
 
     # tear down
+
+def current_datetime_utc_z():
+    return datetime.now(UTC).isoformat().replace('+00:00', 'Z')

@@ -1,4 +1,3 @@
-
 from tests.conftest import current_datetime_utc_z
 from app.api import crud
 
@@ -82,22 +81,24 @@ def test_read_all_citations(test_app, monkeypatch):
     assert response.json() == test_data
 
 def test_remove_citation(test_app, monkeypatch):
+    id = 2
+    doi = "10.1234/example.5678"
     async def mock_get(id):
         return {
             "id": id,
-            "doi": "10.1234/example.5678",
+            "doi": doi,
             "highlight": {"1": {"rect": [100, 200, 300, 220], "text": "highlighted text"}},
             "comment": "This is an important passage",
             "created_at": current_datetime_utc_z(),
         }
     monkeypatch.setattr(crud, "get_citation", mock_get)
     async def mock_delete(id):
-        return id
+        return 1
     
     monkeypatch.setattr(crud, "delete_citation", mock_delete)
-    response = test_app.delete("/citations/1/")
+    response = test_app.delete(f"/citations/{id}/")
     assert response.status_code == 200
-    assert response.json() == {"id": 1, "doi": "10.1234/example.5678"}
+    assert response.json() == {"id": id, "doi": doi}
 
 def test_remove_citation_incorrect_id(test_app, monkeypatch):
     async def mock_get(id):

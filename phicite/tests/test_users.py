@@ -1,0 +1,314 @@
+import pytest
+
+from app.models.tortoise import User
+
+#TODO: do this better; clean up users after tests
+async def remove_user(username: str = None, email: str = None):
+    existing_user = await User.filter(username="testuser").first()
+
+    if existing_user:
+        print(f"Deleting existing user: {existing_user.username}")
+        await existing_user.delete()
+
+    existing_user = await User.filter(email="cVwYH@example.com").first()
+
+    if existing_user:
+        print(f"Deleting existing user: {existing_user.email}")
+        await existing_user.delete()
+
+@pytest.mark.asyncio
+async def test_create_user_valid_json(test_app_with_db):
+
+    await remove_user(username="newuser", email="cVwYH@example.com")
+
+    """Integration test for creating a user with valid JSON."""
+    response = await test_app_with_db.post(
+        "/users/",
+        json={
+            "username": "newuser",
+            "email": "cVwYH@example.com",
+            "full_name": "New User",
+            "password": "dfASDFD2342#$#@#$@#@#"
+        }
+    )
+    print(response.json())  # Debugging output
+    assert response.status_code == 201
+    response_dict = response.json()
+    assert response_dict["username"] == "newuser"
+    assert response_dict["email"] == "cVwYH@example.com"
+    assert response_dict["full_name"] == "New User"
+    assert "id" in response_dict
+    assert "hashed_password" not in response_dict
+    assert "password" not in response_dict
+
+#TODO: parameterize this test with specific error messages for different invalid cases
+@pytest.mark.asyncio
+async def test_register_user_invalid_data(test_app_with_db):
+    await remove_user(username="testuser", email="test@example.com")
+
+    test_cases = [
+        # Missing username
+        {
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "password": "dfASDFD2342#$#@#$@#@#"
+        },
+        # Invalid email
+        {
+            "username": "testuser",
+            "email": "not-an-email",
+            "full_name": "Test User",
+            "password": "dfASDFD2342#$#@#$@#@#"
+        },
+        # Password too short (if you have validation)
+        {
+            "username": "testuser",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "password": "short"
+        }
+    ]
+    
+    for invalid_data in test_cases:
+        response = await test_app_with_db.post("/users/", json=invalid_data)
+        assert response.status_code in (400, 422)
+
+@pytest.mark.asyncio
+async def test_get_user(test_app_with_db):
+    await remove_user(username="testuser", email="cVwYH@example.com")
+
+    new_user = {
+        "username": "testuser",
+        "email": "cVwYH@example.com",
+        "full_name": "Test User",
+        "password": "dfASDFD2342#$#@#$@#@#"
+    }
+
+    """Integration test for getting a user by username."""
+    # Create a user first
+    response = await test_app_with_db.post(
+        "/users/",
+        json=new_user
+    )
+    assert response.status_code == 201
+    response_dict = response.json()
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+    assert "id" in response_dict
+    assert "hashed_password" not in response_dict
+    assert "password" not in response_dict
+    user_id = response_dict["id"]
+
+    response = await test_app_with_db.get(f"/users/username/{new_user['username']}/")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["id"] == user_id
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+
+    response = await test_app_with_db.get(f"/users/email/{new_user['email']}/")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["id"] == user_id
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+
+    response = await test_app_with_db.get(f"/users/id/{user_id}/")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["id"] == user_id
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+
+@pytest.mark.asyncio
+async def test_authenticate_user(test_app_with_db):
+    await remove_user(username="testuser", email="cVwYH@example.com")
+
+    auth_payload = {
+        "username": "testuser",
+        "password": "dfASDFD2342#$#@#$@#@#"
+    }
+
+    # Create username and password form input
+    response = await test_app_with_db.post(
+        "/users/token",
+        data={  # Use data parameter, not form_data
+            "username": auth_payload["username"],
+            "password": auth_payload["password"],
+            "grant_type": "password",
+            "scope": "",
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Incorrect username or password"}
+
+    new_user = {
+        "username": "testuser",
+        "email": "cVwYH@example.com",
+        "full_name": "Test User",
+        "password": "dfASDFD2342#$#@#$@#@#",
+    }
+
+    response = await test_app_with_db.post("/users/", json=new_user)
+    assert response.status_code == 201
+    response_dict = response.json()
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+    assert "id" in response_dict
+    assert "hashed_password" not in response_dict
+    assert "password" not in response_dict
+
+    response = await test_app_with_db.post(
+        "/users/token",
+        data={
+            "username": auth_payload["username"],
+            "password": auth_payload["password"],
+            "grant_type": "password",
+            "scope": "",
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["access_token"] is not None
+    assert response_dict["token_type"] == "bearer"
+    assert response_dict.keys() == {"access_token", "token_type"}
+
+    auth_payload = {"username": "testuser", "password": "wrongpassword"}
+
+    response = await test_app_with_db.post(
+        "/users/token",
+        data={
+            "username": auth_payload["username"],
+            "password": auth_payload["password"],
+            "grant_type": "password",
+            "scope": "",
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Incorrect username or password"}
+
+@pytest.mark.asyncio
+async def test_get_me(test_app_with_db):
+    await remove_user(username="testuser", email="cVwYH@example.com")
+
+    new_user = {
+        "username": "testuser",
+        "email": "cVwYH@example.com",
+        "full_name": "Test User",
+        "password": "dfASDFD2342#$#@#$@#@#",
+    }
+
+    response = await test_app_with_db.post("/users/", json=new_user)
+    assert response.status_code == 201
+    response_dict = response.json()
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+    assert "id" in response_dict
+    assert "hashed_password" not in response_dict
+    assert "password" not in response_dict
+
+    auth_payload = {
+        "username": "testuser",
+        "password": "dfASDFD2342#$#@#$@#@#"
+    }
+
+    response = await test_app_with_db.post(
+        "/users/token",
+        data={
+            "username": auth_payload["username"],
+            "password": auth_payload["password"],
+            "grant_type": "password",
+            "scope": "",
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["access_token"] is not None
+    assert response_dict["token_type"] == "bearer"
+    assert response_dict.keys() == {"access_token", "token_type"}
+
+    token = response_dict["access_token"]
+
+    response = await test_app_with_db.get(
+        "/users/me/",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    print("Response status:", response.status_code)
+    print("Response body:", response.json())
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+    assert "id" in response_dict
+    assert "hashed_password" not in response_dict
+    assert "password" not in response_dict
+
+@pytest.mark.asyncio
+async def test_get_my_citations(test_app_with_db):
+    await remove_user(username="testuser", email="cVwYH@example.com")
+
+    new_user = {
+        "username": "testuser",
+        "email": "cVwYH@example.com",
+        "full_name": "Test User",
+        "password": "dfASDFD2342#$#@#$@#@#",
+    }
+
+    response = await test_app_with_db.post("/users/", json=new_user)
+    assert response.status_code == 201
+    response_dict = response.json()
+    assert response_dict["username"] == new_user["username"]
+    assert response_dict["email"] == new_user["email"]
+    assert response_dict["full_name"] == new_user["full_name"]
+    assert "id" in response_dict
+    assert "hashed_password" not in response_dict
+    assert "password" not in response_dict
+
+    auth_payload = {
+        "username": "testuser",
+        "password": "dfASDFD2342#$#@#$@#@#"
+    }
+
+    response = await test_app_with_db.post(
+        "/users/token",
+        data={
+            "username": auth_payload["username"],
+            "password": auth_payload["password"],
+            "grant_type": "password",
+            "scope": "",
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["access_token"] is not None
+    assert response_dict["token_type"] == "bearer"
+    assert response_dict.keys() == {"access_token", "token_type"}
+
+    token = response_dict["access_token"]
+
+    response = await test_app_with_db.get(
+        "/users/me/citations/",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    print("Response status:", response.status_code)
+    print("Response body:", response.json())
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+    response_dict = response.json()[0]
+    assert response_dict.keys() == {"item_id", "owner"}

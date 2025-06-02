@@ -16,6 +16,23 @@ CREATE TABLE IF NOT EXISTS "textsummary" (
     "summary" TEXT NOT NULL,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS "token" (
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "access_token" VARCHAR(255) NOT NULL,
+    "token_type" VARCHAR(50) NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "tokendata" (
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "username" VARCHAR(50)
+);
+CREATE TABLE IF NOT EXISTS "user" (
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "username" VARCHAR(50) NOT NULL UNIQUE,
+    "email" VARCHAR(100) NOT NULL UNIQUE,
+    "full_name" VARCHAR(100),
+    "disabled" BOOL NOT NULL DEFAULT False,
+    "hashed_password" VARCHAR(255) NOT NULL
+);
 CREATE TABLE IF NOT EXISTS "aerich" (
     "id" SERIAL NOT NULL PRIMARY KEY,
     "version" VARCHAR(255) NOT NULL,

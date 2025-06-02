@@ -12,8 +12,11 @@ services:
       - TESTING=0
       - DATABASE_URL=postgres://postgres:postgres@web-db:5432/web_dev 
       - DATABASE_TEST_URL=postgres://postgres:postgres@web-db:5432/web_test
+      - BASE_URL=http://localhost:8004
     depends_on:   
       - web-db
+    env_file:
+      - .env
 
   web-db:
     build:

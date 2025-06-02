@@ -29,3 +29,33 @@ class PDFHighlight(models.Model):
             return f"{self.doi}: {highlighted_text}"
 
 PDFHighlightSchema = pydantic_model_creator(PDFHighlight) 
+
+# Tortoise ORM model (single table)
+class User(models.Model):
+    username = fields.CharField(max_length=50, unique=True)
+    email = fields.CharField(max_length=100, unique=True)
+    full_name = fields.CharField(max_length=100, null=True)
+    disabled = fields.BooleanField(default=False)
+    hashed_password = fields.CharField(max_length=255)
+
+    def __str__(self):
+        return self.username
+    
+UserSchema = pydantic_model_creator(User, exclude=("hashed_password",))
+
+class Token(models.Model):
+    access_token = fields.CharField(max_length=255)
+    token_type = fields.CharField(max_length=50)
+
+    def __str__(self):
+        return self.access_token
+
+TokenSchema = pydantic_model_creator(Token, name="Token")
+
+class TokenData(models.Model):
+    username = fields.CharField(max_length=50, null=True)
+
+    def __str__(self):
+        return self.username if self.username else "No username"
+
+TokenDataSchema = pydantic_model_creator(TokenData, name="TokenData")

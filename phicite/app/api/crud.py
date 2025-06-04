@@ -4,10 +4,9 @@ from app.models.pydantic import (
     SummaryPayloadSchema,
     SummaryUpdatePayloadSchema,
     HighlightPayloadSchema,
-    UserCreate,
-    UserSchema
+    UserCreate
 )
-from app.models.tortoise import TextSummary, PDFHighlight, User as UserDB, UserSchema as UserDBSchema
+from app.models.tortoise import TextSummary, PDFHighlight, User as UserDB
 from app.auth import get_password_hash
 
 async def post_user(user: UserCreate) -> Union[dict, None]:
@@ -121,45 +120,45 @@ async def put_summary(id: int, payload: SummaryUpdatePayloadSchema) -> Union[dic
         return updated_summary
     return None
 
-async def post_citation(payload: HighlightPayloadSchema) -> int:
-    citation = PDFHighlight(
+async def post_highlight(payload: HighlightPayloadSchema) -> int:
+    highlight = PDFHighlight(
         doi=payload.doi,
         highlight=payload.highlight,
         comment=payload.comment 
     )
-    await citation.save()
-    return citation.id
+    await highlight.save()
+    return highlight.id
 
-async def get_citation(id: int) -> Union[dict, None]:
-    citation = await PDFHighlight.filter(id=id).first().values()
-    if citation:
-        return citation
+async def get_highlight(id: int) -> Union[dict, None]:
+    highlight = await PDFHighlight.filter(id=id).first().values()
+    if highlight:
+        return highlight
     return None
 
-async def get_all_citations() -> List:
-    citations = await PDFHighlight.all().values()
-    return citations
+async def get_all_highlights() -> List:
+    highlights = await PDFHighlight.all().values()
+    return highlights
 
-async def delete_citation(id: int) -> int:
-    citation = await PDFHighlight.filter(id=id).first().delete()
-    return citation
+async def delete_highlight(id: int) -> int:
+    highlight = await PDFHighlight.filter(id=id).first().delete()
+    return highlight
 
-async def put_citation(id: int, payload: HighlightPayloadSchema) -> Union[dict, None]:
-    existing_citation = await PDFHighlight.filter(id=id).first().values()
+async def put_highlight(id: int, payload: HighlightPayloadSchema) -> Union[dict, None]:
+    existing_highlight = await PDFHighlight.filter(id=id).first().values()
     
-    if not existing_citation:
+    if not existing_highlight:
         return None
         
-    if existing_citation["doi"] != payload.doi:
-        raise ValueError("DOI does not match existing citation")
+    if existing_highlight["doi"] != payload.doi:
+        raise ValueError("DOI does not match existing highlight")
     
-    citation = await PDFHighlight.filter(id=id).update(
+    highlight = await PDFHighlight.filter(id=id).update(
         doi=payload.doi, 
         highlight=payload.highlight, 
         comment=payload.comment
     )
     
-    if citation:
-        updated_citation = await PDFHighlight.filter(id=id).first().values()
-        return updated_citation
+    if highlight:
+        updated_highlight = await PDFHighlight.filter(id=id).first().values()
+        return updated_highlight
     return None

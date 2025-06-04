@@ -258,7 +258,7 @@ async def test_get_me(test_app_with_db):
     assert "password" not in response_dict
 
 @pytest.mark.asyncio
-async def test_get_my_citations(test_app_with_db):
+async def test_get_my_highlights(test_app_with_db):
     await remove_user(username="testuser", email="cVwYH@example.com")
 
     new_user = {
@@ -303,7 +303,7 @@ async def test_get_my_citations(test_app_with_db):
     token = response_dict["access_token"]
 
     response = await test_app_with_db.get(
-        "/users/me/citations/",
+        "/users/me/highlights/",
         headers={"Authorization": f"Bearer {token}"}
     )
     print("Response status:", response.status_code)

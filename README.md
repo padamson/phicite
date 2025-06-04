@@ -1,4 +1,6 @@
-# Test-Driven Development with FastAPI and Docker
+# PhiCite
+
+Extract and cite machine-readable knowledge in documents on the web
 
 [![CI/CD](https://github.com/padamson/fastapi-tdd-docker/actions/workflows/main.yml/badge.svg)](https://github.com/padamson/fastapi-tdd-docker/actions/workflows/main.yml)
 

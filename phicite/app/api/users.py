@@ -134,8 +134,8 @@ async def read_users_me(
     return current_user
 
 
-@router.get("/me/citations/")
-async def read_own_citations(
+@router.get("/me/highlights/")
+async def read_own_highlights(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
 ):
     return [{"item_id": "Foo", "owner": current_user.username}]

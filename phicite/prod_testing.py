@@ -135,10 +135,10 @@ if data["id"] != summary_id:
 
 test_passed("Summary deleted successfully")
 
-# Test citation creation
-print_separator("Testing POST /citations/")
+# Test highlight creation
+print_separator("Testing POST /highlights/")
 response = requests.post(
-    f"{BASE_URL}/citations/",
+    f"{BASE_URL}/highlights/",
     json={
         "doi": "10.1234/example.5678",
         "highlight": {
@@ -159,20 +159,20 @@ except json.JSONDecodeError:
 if "id" not in data or "doi" not in data:
     test_failed("Response does not contain 'id' or 'doi'", response)
 
-citation_id = data["id"]
+highlight_id = data["id"]
 doi = data["doi"]
 
-if not isinstance(citation_id, int):
-    test_failed(f"'id' is not a number: {citation_id}", response)
+if not isinstance(highlight_id, int):
+    test_failed(f"'id' is not a number: {highlight_id}", response)
 
 if doi != "10.1234/example.5678":
     test_failed(f"'doi' is not 10.1234/example.5678: {doi}", response)
 
-test_passed(f"Created citation with ID {citation_id} and DOI {doi}")
+test_passed(f"Created highlight with ID {highlight_id} and DOI {doi}")
 
-# Test citation retrieval
-print_separator(f"Testing GET /citations/{citation_id}/")
-response = requests.get(f"{BASE_URL}/citations/{citation_id}/")
+# Test highlight retrieval
+print_separator(f"Testing GET /highlights/{highlight_id}/")
+response = requests.get(f"{BASE_URL}/highlights/{highlight_id}/")
 if response.status_code != 200:
     test_failed(f"Expected status code 200, got {response.status_code}", response)
 try:
@@ -181,8 +181,8 @@ except json.JSONDecodeError:
     test_failed("Response is not valid JSON", response)
 if "id" not in data or "doi" not in data or "highlight" not in data:
     test_failed("Response is missing required fields", response)
-if data["id"] != citation_id:
-    test_failed(f"Expected id {citation_id}, got {data['id']}", response)
+if data["id"] != highlight_id:
+    test_failed(f"Expected id {highlight_id}, got {data['id']}", response)
 if data["doi"] != "10.1234/example.5678":
     test_failed(f"Expected doi '10.1234/example.5678', got {data['doi']}", response)
 if data["highlight"] != {
@@ -197,12 +197,12 @@ if data["created_at"] is None:
 if not isinstance(data["created_at"], str):
     test_failed("Created_at field is not a string", response)
 
-test_passed(f"Retrieved citation with ID {citation_id}, DOI {doi}, and highlight data matches")
+test_passed(f"Retrieved highlight with ID {highlight_id}, DOI {doi}, and highlight data matches")
 
-# Test citation update
-print_separator(f"Testing PUT /citations/{citation_id}/")
+# Test highlight update
+print_separator(f"Testing PUT /highlights/{highlight_id}/")
 response = requests.put(
-    f"{BASE_URL}/citations/{citation_id}/",
+    f"{BASE_URL}/highlights/{highlight_id}/",
     json={
         "doi": "10.1234/example.5678",
         "highlight": {
@@ -231,11 +231,11 @@ if data["created_at"] is None:
     test_failed("Created_at field is missing", response)
 if not isinstance(data["created_at"], str):
     test_failed("Created_at field is not a string", response)
-test_passed("Citation updated successfully")
+test_passed("highlight updated successfully")
 
-# Test citations listing
-print_separator("Testing GET /citations/")
-response = requests.get(f"{BASE_URL}/citations/")
+# Test highlights listing
+print_separator("Testing GET /highlights/")
+response = requests.get(f"{BASE_URL}/highlights/")
 if response.status_code != 200:
     test_failed(f"Expected status code 200, got {response.status_code}", response)
 try:
@@ -243,34 +243,34 @@ try:
 except json.JSONDecodeError:
     test_failed("Response is not valid JSON", response)
 if not isinstance(data, list) or len(data) == 0:
-    test_failed("Expected a non-empty list of citations", response)
-test_passed("Retrieved list of citations")
+    test_failed("Expected a non-empty list of highlights", response)
+test_passed("Retrieved list of highlights")
 
-# Test citation deletion
-print_separator(f"Testing DELETE /citations/{citation_id}/")
-response = requests.delete(f"{BASE_URL}/citations/{citation_id}/")
+# Test highlight deletion
+print_separator(f"Testing DELETE /highlights/{highlight_id}/")
+response = requests.delete(f"{BASE_URL}/highlights/{highlight_id}/")
 if response.status_code != 200:
     test_failed(f"Expected status code 200, got {response.status_code}", response)
 try:
     data = response.json()
 except json.JSONDecodeError:
     test_failed("Response is not valid JSON", response)
-if data["id"] != citation_id:
-    test_failed(f"Expected id {citation_id}, got {data['id']}", response)
-test_passed(f"Citation {citation_id} deleted successfully")
+if data["id"] != highlight_id:
+    test_failed(f"Expected id {highlight_id}, got {data['id']}", response)
+test_passed(f"highlight {highlight_id} deleted successfully")
 
-# Test citation retrieval after deletion
-print_separator(f"Testing GET /citations/{citation_id}/ after deletion")
-response = requests.get(f"{BASE_URL}/citations/{citation_id}/")
+# Test highlight retrieval after deletion
+print_separator(f"Testing GET /highlights/{highlight_id}/ after deletion")
+response = requests.get(f"{BASE_URL}/highlights/{highlight_id}/")
 if response.status_code != 404:
     test_failed(f"Expected status code 404, got {response.status_code}", response)
 try:
     data = response.json()
 except json.JSONDecodeError:
     test_failed("Response is not valid JSON", response)
-if data["detail"] != "Citation not found":
-    test_failed(f"Expected 'Citation not found', got {data['detail']}", response)
-test_passed(f"Confirmed citation {citation_id} not found after deletion")
+if data["detail"] != "highlight not found":
+    test_failed(f"Expected 'highlight not found', got {data['detail']}", response)
+test_passed(f"Confirmed highlight {highlight_id} not found after deletion")
 
 
 print("\nAll tests passed successfully!")

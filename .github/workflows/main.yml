@@ -56,7 +56,7 @@ jobs:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
       - name: Pull image
         run: |
-          docker pull ${{ env.IMAGE }}:builder:latest
+          docker pull ${{ env.IMAGE }}-builder:latest
       - name: Run container
         run: |
           docker run \

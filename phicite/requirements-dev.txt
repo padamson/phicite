@@ -3,5 +3,6 @@ pytest==8.3.5
 pytest-cov==6.1.1
 pytest-xdist==3.6.1
 pytest-asyncio==1.0.0
+httpx==0.28.1
 
 -r requirements.txt

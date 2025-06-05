@@ -82,7 +82,7 @@ jobs:
             -p 5003:8765 \
             ${{ env.IMAGE }}-final:latest
       - name: Install requirements
-        run: docker exec fastapi-tdd pip install pytest pytest-asycio httpx ruff
+        run: docker exec fastapi-tdd pip install pytest pytest-asyncio httpx ruff
       - name: Pytest
         run: docker exec fastapi-tdd python -m pytest .
       - name: ruff

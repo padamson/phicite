@@ -2,7 +2,6 @@ aerich[toml]==0.8.2
 asyncpg==0.30.0
 fastapi==0.115.12
 gunicorn==22.0.0
-httpx==0.28.1
 lxml-html-clean==0.4.2
 newspaper3k==0.2.8
 pydantic[email]==2.11.5

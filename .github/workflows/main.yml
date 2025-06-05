@@ -54,10 +54,10 @@ jobs:
         run: echo ${{ secrets.GHCR_PAT }} | docker login -u ${GITHUB_ACTOR} --password-stdin ghcr.io
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
-      - name: Pull image
+      - name: Pull builder image
         run: |
           docker pull ${{ env.IMAGE }}-builder:latest
-      - name: Run container
+      - name: Run tests and checks in builder image
         run: |
           docker run \
             -d \
@@ -67,11 +67,8 @@ jobs:
             -e DATABASE_URL=sqlite://sqlite.db \
             -e DATABASE_TEST_URL=sqlite://sqlite.db \
             -p 5003:8765 \
-            ${{ env.IMAGE }}-builder:latest
-      - name: Pytest
-        run: docker exec fastapi-tdd python -m pytest .
-      - name: ruff
-        run: docker exec fastapi-tdd python -m ruff check .
+            ${{ env.IMAGE }}-builder:latest \
+            sh -c "python -m pytest . && python -m ruff check ."
 
   deploy:
     name: Deploy to Heroku

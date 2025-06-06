@@ -70,7 +70,7 @@ jobs:
             -e DATABASE_TEST_URL=sqlite://sqlite.db \
             -p 5003:8765 \
             ${{ env.IMAGE }}-builder:latest \
-            sh -c "python -m pytest . && python -m ruff check ."
+            sh -c "pwd && ls -l . && find . -name 'test_*.py' && python -m pytest -v . && python -m ruff check ."
 
   deploy:
     name: Deploy to Heroku

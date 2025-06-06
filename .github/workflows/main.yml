@@ -35,7 +35,7 @@ jobs:
             --file ./phicite/Dockerfile.prod \
             "./phicite"
           docker build \
-            -- target final \
+            --target final \
             --cache-from ${{ env.IMAGE }}-final:latest \
             --tag ${{ env.IMAGE }}-final:latest \
             --file ./phicite/Dockerfile.prod \

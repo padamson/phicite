@@ -37,7 +37,6 @@ jobs:
           docker build \
             --cache-from ${{ env.IMAGE }}-final:latest \
             --tag ${{ env.IMAGE }}-final:latest \
-            --tag ${{ env.HEROKU_REGISTRY_IMAGE }} \
             --file ./phicite/Dockerfile.prod \
             "./phicite"
       - name: Push images
@@ -97,6 +96,9 @@ jobs:
         run: docker login -u _ -p ${HEROKU_AUTH_TOKEN} registry.heroku.com
         env:
           HEROKU_AUTH_TOKEN: ${{ secrets.HEROKU_AUTH_TOKEN }}
+      - name: Tag image for Heroku
+        run: |
+          docker tag ${{ env.IMAGE }}-final:latest ${{ env.HEROKU_REGISTRY_IMAGE }}
       - name: Push to the registry
         run: docker push ${{ env.HEROKU_REGISTRY_IMAGE }}
       - name: Set environment variables

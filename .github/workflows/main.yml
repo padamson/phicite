@@ -10,6 +10,9 @@ jobs:
   build:
     name: Build Docker Images
     runs-on: ubuntu-latest
+    env:
+      HEROKU_APP_NAME: ${{ vars.HEROKU_APP_NAME }}
+      HEROKU_REGISTRY_IMAGE: registry.heroku.com/${{ vars.HEROKU_APP_NAME }}/summarizer
     steps:
       - name: Checkout
         uses: actions/checkout@v3

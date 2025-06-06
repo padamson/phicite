@@ -74,6 +74,7 @@ jobs:
             --name fastapi-tdd \
             -e PORT=8765 \
             -e ENVIRONMENT=dev \
+            -e BASE_URL=http://localhost:8004 \
             -e DATABASE_URL=sqlite://sqlite.db \
             -e DATABASE_TEST_URL=sqlite://sqlite.db \
             -p 5003:8765 \

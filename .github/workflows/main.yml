@@ -35,10 +35,18 @@ jobs:
             --file ./phicite/Dockerfile.prod \
             "./phicite"
           docker build \
+            -- target final \
             --cache-from ${{ env.IMAGE }}-final:latest \
             --tag ${{ env.IMAGE }}-final:latest \
             --file ./phicite/Dockerfile.prod \
             "./phicite"
+          docker build \
+            --target tester \
+            --cache-from ${{ env.IMAGE }}-tester:latest \
+            --tag ${{ env.IMAGE }}-tester:latest \
+            --file ./phicite/Dockerfile.prod \
+            "./phicite"
+
       - name: Push images
         run: |
           docker push ${{ env.IMAGE }}-builder:latest
@@ -59,8 +67,8 @@ jobs:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
       - name: Pull builder image
         run: |
-          docker pull ${{ env.IMAGE }}-builder:latest
-      - name: Run tests and checks in builder image
+          docker pull ${{ env.IMAGE }}-tester:latest
+      - name: Run tests and checks in tester image
         run: |
           docker run \
             --name fastapi-tdd \
@@ -69,7 +77,7 @@ jobs:
             -e DATABASE_URL=sqlite://sqlite.db \
             -e DATABASE_TEST_URL=sqlite://sqlite.db \
             -p 5003:8765 \
-            ${{ env.IMAGE }}-builder:latest \
+            ${{ env.IMAGE }}-tester:latest \
             sh -c "pwd && ls -l . && find . -name 'test_*.py' && python -m pytest -v . && python -m ruff check ."
 
   deploy:

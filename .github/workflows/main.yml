@@ -92,7 +92,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull final image
         run: |
-          docker pull ${{ env.HEROKU_REGISTRY_IMAGE }}:latest
+          docker pull ${{ env.IMAGE }}-final:latest
       - name: Log in to the Heroku Container Registry
         run: docker login -u _ -p ${HEROKU_AUTH_TOKEN} registry.heroku.com
         env:

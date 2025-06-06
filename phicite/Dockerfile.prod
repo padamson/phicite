@@ -16,6 +16,8 @@ WORKDIR /usr/src/app
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV ENVIRONMENT=prod
+ENV TESTING=1
 
 # install dependencies
 RUN pip install --upgrade pip
@@ -26,6 +28,16 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 COPY ./requirements-dev.txt .
 RUN pip install -r requirements-dev.txt
 
+COPY . .
+
+# chown all the files to the app user
+RUN chown -R app:app $HOME
+
+# change to the app user
+USER app
+
+# run gunicorn
+CMD gunicorn --bind 0.0.0.0:$PORT app.main:app -k uvicorn.workers.UvicornWorker
 
 #########
 # FINAL #

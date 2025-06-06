@@ -46,7 +46,6 @@ jobs:
             --tag ${{ env.IMAGE }}-tester:latest \
             --file ./phicite/Dockerfile.prod \
             "./phicite"
-
       - name: Push images
         run: |
           docker push ${{ env.IMAGE }}-builder:latest

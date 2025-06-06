@@ -22,10 +22,6 @@ RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
-# install dev dependencies
-COPY ./requirements-dev.txt .
-RUN pip install -r requirements-dev.txt
-
 #########
 # FINAL #
 #########
@@ -106,8 +102,8 @@ RUN apk update \
   && apk del
 
 # install python dependencies
-COPY --from=builder /usr/src/app/wheels /wheels
-COPY --from=builder /usr/src/app/requirements.txt .
+COPY --from=final /usr/src/app/wheels /wheels
+COPY --from=final /usr/src/app/requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache /wheels/*
 RUN pip install "uvicorn[standard]==0.34.1"

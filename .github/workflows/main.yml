@@ -74,6 +74,9 @@ jobs:
             --name fastapi-tdd \
             -e PORT=8765 \
             -e ENVIRONMENT=dev \
+            -e JWT_SECRET_KEY=d8caaa7f91ce694f1ec0003f7a1db97a7b09f139c2d899487a336833c23a147f \
+            -e JWT_ALGORITHM=HS256 \
+            -e ACCESS_TOKEN_EXPIRE_MINUTES=15 \
             -e BASE_URL=http://localhost:8004 \
             -e DATABASE_URL=sqlite://sqlite.db \
             -e DATABASE_TEST_URL=sqlite://sqlite.db \

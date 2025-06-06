@@ -34,6 +34,7 @@ jobs:
           docker build \
             --cache-from ${{ env.IMAGE }}-final:latest \
             --tag ${{ env.IMAGE }}-final:latest \
+            --tag ${{ env.HEROKU_REGISTRY_IMAGE }}:latest \
             --file ./phicite/Dockerfile.prod \
             "./phicite"
       - name: Push images
@@ -88,10 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull final image
         run: |
-          docker pull ${{ env.IMAGE }}-final:latest
-      - name: Tag final image
-        run: |
-          docker tag ${{ env.IMAGE }}-final:latest ${{ env.HEROKU_REGISTRY_IMAGE }}:latest
+          docker pull ${{ env.HEROKU_REGISTRY_IMAGE }}:latest
       - name: Log in to the Heroku Container Registry
         run: docker login -u _ -p ${HEROKU_AUTH_TOKEN} registry.heroku.com
         env:

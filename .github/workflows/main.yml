@@ -63,7 +63,6 @@ jobs:
       - name: Run tests and checks in builder image
         run: |
           docker run \
-            -d \
             --name fastapi-tdd \
             -e PORT=8765 \
             -e ENVIRONMENT=dev \

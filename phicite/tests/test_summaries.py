@@ -5,11 +5,12 @@ from app.api import summaries
 
 @pytest.mark.asyncio
 async def test_create_summary(test_app_with_db, monkeypatch):
+    client, _, _ = test_app_with_db
     def mock_generate_summary(summary_id, url):
         return None
     monkeypatch.setattr(summaries, "generate_summary", mock_generate_summary)
 
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/summaries/", json={"url": "https://foo.bar"}
     )
 
@@ -36,14 +37,15 @@ def test_create_summaries_invalid_json(test_app):
 
 @pytest.mark.asyncio
 async def test_read_summary(test_app_with_db, monkeypatch):
+    client, _, _ = test_app_with_db
     def mock_generate_summary(summary_id, url):
         return None
     monkeypatch.setattr(summaries, "generate_summary", mock_generate_summary)
 
-    response = await test_app_with_db.post("/summaries/", json={"url": "https://foo.bar/"})
+    response = await client.post("/summaries/", json={"url": "https://foo.bar/"})
     summary_id = response.json()["id"]
 
-    response = await test_app_with_db.get(f"/summaries/{summary_id}/")
+    response = await client.get(f"/summaries/{summary_id}/")
     assert response.status_code == 200
 
     response_dict = response.json()
@@ -55,11 +57,12 @@ async def test_read_summary(test_app_with_db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_read_summary_incorrect_id(test_app_with_db):
-    response = await test_app_with_db.get("/summaries/999/")
+    client, _, _ = test_app_with_db
+    response = await client.get("/summaries/999/")
     assert response.status_code == 404
     assert response.json()["detail"] == "Summary not found"
 
-    response = await test_app_with_db.get("/summaries/0/")
+    response = await client.get("/summaries/0/")
     assert response.status_code == 422
     assert response.json() == {
         "detail": [
@@ -75,14 +78,15 @@ async def test_read_summary_incorrect_id(test_app_with_db):
 
 @pytest.mark.asyncio
 async def test_read_all_summaries(test_app_with_db, monkeypatch):
+    client, _, _ = test_app_with_db
     def mock_generate_summary(summary_id, url):
         return None
     monkeypatch.setattr(summaries, "generate_summary", mock_generate_summary)
 
-    response = await test_app_with_db.post("/summaries/", json={"url": "https://foo.bar/"})
+    response = await client.post("/summaries/", json={"url": "https://foo.bar/"})
     summary_id = response.json()["id"]
 
-    response = await test_app_with_db.get("/summaries/")
+    response = await client.get("/summaries/")
     assert response.status_code == 200
 
     response_list = response.json()
@@ -90,25 +94,27 @@ async def test_read_all_summaries(test_app_with_db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_remove_summary(test_app_with_db, monkeypatch):
+    client, _, _ = test_app_with_db
     def mock_generate_summary(summary_id, url):
         return None
     monkeypatch.setattr(summaries, "generate_summary", mock_generate_summary)
 
-    response = await test_app_with_db.post("/summaries/", json={"url": "https://foo.bar/"})
+    response = await client.post("/summaries/", json={"url": "https://foo.bar/"})
     summary_id = response.json()["id"]
 
-    response = await test_app_with_db.delete(f"/summaries/{summary_id}/")
+    response = await client.delete(f"/summaries/{summary_id}/")
     assert response.status_code == 200
     assert response.json() == {"id": summary_id, "url": "https://foo.bar/"}
 
 
 @pytest.mark.asyncio
 async def test_remove_summary_incorrect_id(test_app_with_db):
-    response = await test_app_with_db.delete("/summaries/999/")
+    client, _, _ = test_app_with_db
+    response = await client.delete("/summaries/999/")
     assert response.status_code == 404
     assert response.json()["detail"] == "Summary not found"
 
-    response = await test_app_with_db.delete("/summaries/0/")
+    response = await client.delete("/summaries/0/")
     assert response.status_code == 422
     assert response.json() == {
         "detail": [
@@ -125,15 +131,16 @@ async def test_remove_summary_incorrect_id(test_app_with_db):
 
 @pytest.mark.asyncio
 async def test_update_summary(test_app_with_db, monkeypatch):
+    client, _, _ = test_app_with_db
     def mock_generate_summary(summary_id, url):
         return None
 
     monkeypatch.setattr(summaries, "generate_summary", mock_generate_summary)
 
-    response = await test_app_with_db.post("/summaries/", json={"url": "https://foo.bar/"})
+    response = await client.post("/summaries/", json={"url": "https://foo.bar/"})
     summary_id = response.json()["id"]
 
-    response = await test_app_with_db.put(
+    response = await client.put(
         f"/summaries/{summary_id}/",
         json={"url": "https://foo.bar/", "summary": "updated!"},
     )
@@ -207,7 +214,8 @@ async def test_update_summary(test_app_with_db, monkeypatch):
 async def test_update_summary_invalid(
     test_app_with_db, summary_id, payload, status_code, detail
 ):
-    response = await test_app_with_db.put(f"/summaries/{summary_id}/", json=payload)
+    client, _, _ = test_app_with_db
+    response = await client.put(f"/summaries/{summary_id}/", json=payload)
     assert response.status_code == status_code
     assert response.json()["detail"] == detail
 

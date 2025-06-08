@@ -18,11 +18,11 @@ async def remove_user(username: str = None, email: str = None):
 
 @pytest.mark.asyncio
 async def test_create_user_valid_json(test_app_with_db):
-
+    client, _, _ = test_app_with_db
     await remove_user(username="newuser", email="cVwYH@example.com")
 
     """Integration test for creating a user with valid JSON."""
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/",
         json={
             "username": "newuser",
@@ -44,6 +44,7 @@ async def test_create_user_valid_json(test_app_with_db):
 #TODO: parameterize this test with specific error messages for different invalid cases
 @pytest.mark.asyncio
 async def test_register_user_invalid_data(test_app_with_db):
+    client, _, _ = test_app_with_db
     await remove_user(username="testuser", email="test@example.com")
 
     test_cases = [
@@ -70,11 +71,12 @@ async def test_register_user_invalid_data(test_app_with_db):
     ]
     
     for invalid_data in test_cases:
-        response = await test_app_with_db.post("/users/", json=invalid_data)
+        response = await client.post("/users/", json=invalid_data)
         assert response.status_code in (400, 422)
 
 @pytest.mark.asyncio
 async def test_get_user(test_app_with_db):
+    client, _, _ = test_app_with_db
     await remove_user(username="testuser", email="cVwYH@example.com")
 
     new_user = {
@@ -86,7 +88,7 @@ async def test_get_user(test_app_with_db):
 
     """Integration test for getting a user by username."""
     # Create a user first
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/",
         json=new_user
     )
@@ -100,7 +102,7 @@ async def test_get_user(test_app_with_db):
     assert "password" not in response_dict
     user_id = response_dict["id"]
 
-    response = await test_app_with_db.get(f"/users/username/{new_user['username']}/")
+    response = await client.get(f"/users/username/{new_user['username']}/")
     assert response.status_code == 200
     response_dict = response.json()
     assert response_dict["id"] == user_id
@@ -108,7 +110,7 @@ async def test_get_user(test_app_with_db):
     assert response_dict["email"] == new_user["email"]
     assert response_dict["full_name"] == new_user["full_name"]
 
-    response = await test_app_with_db.get(f"/users/email/{new_user['email']}/")
+    response = await client.get(f"/users/email/{new_user['email']}/")
     assert response.status_code == 200
     response_dict = response.json()
     assert response_dict["id"] == user_id
@@ -116,7 +118,7 @@ async def test_get_user(test_app_with_db):
     assert response_dict["email"] == new_user["email"]
     assert response_dict["full_name"] == new_user["full_name"]
 
-    response = await test_app_with_db.get(f"/users/id/{user_id}/")
+    response = await client.get(f"/users/id/{user_id}/")
     assert response.status_code == 200
     response_dict = response.json()
     assert response_dict["id"] == user_id
@@ -126,6 +128,7 @@ async def test_get_user(test_app_with_db):
 
 @pytest.mark.asyncio
 async def test_authenticate_user(test_app_with_db):
+    client, _, _ = test_app_with_db
     await remove_user(username="testuser", email="cVwYH@example.com")
 
     auth_payload = {
@@ -134,7 +137,7 @@ async def test_authenticate_user(test_app_with_db):
     }
 
     # Create username and password form input
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/token",
         data={  # Use data parameter, not form_data
             "username": auth_payload["username"],
@@ -155,7 +158,7 @@ async def test_authenticate_user(test_app_with_db):
         "password": "dfASDFD2342#$#@#$@#@#",
     }
 
-    response = await test_app_with_db.post("/users/", json=new_user)
+    response = await client.post("/users/", json=new_user)
     assert response.status_code == 201
     response_dict = response.json()
     assert response_dict["username"] == new_user["username"]
@@ -165,7 +168,7 @@ async def test_authenticate_user(test_app_with_db):
     assert "hashed_password" not in response_dict
     assert "password" not in response_dict
 
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/token",
         data={
             "username": auth_payload["username"],
@@ -184,7 +187,7 @@ async def test_authenticate_user(test_app_with_db):
 
     auth_payload = {"username": "testuser", "password": "wrongpassword"}
 
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/token",
         data={
             "username": auth_payload["username"],
@@ -199,6 +202,7 @@ async def test_authenticate_user(test_app_with_db):
 
 @pytest.mark.asyncio
 async def test_get_me(test_app_with_db):
+    client, _, _ = test_app_with_db
     await remove_user(username="testuser", email="cVwYH@example.com")
 
     new_user = {
@@ -208,7 +212,7 @@ async def test_get_me(test_app_with_db):
         "password": "dfASDFD2342#$#@#$@#@#",
     }
 
-    response = await test_app_with_db.post("/users/", json=new_user)
+    response = await client.post("/users/", json=new_user)
     assert response.status_code == 201
     response_dict = response.json()
     assert response_dict["username"] == new_user["username"]
@@ -223,7 +227,7 @@ async def test_get_me(test_app_with_db):
         "password": "dfASDFD2342#$#@#$@#@#"
     }
 
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/token",
         data={
             "username": auth_payload["username"],
@@ -242,7 +246,7 @@ async def test_get_me(test_app_with_db):
 
     token = response_dict["access_token"]
 
-    response = await test_app_with_db.get(
+    response = await client.get(
         "/users/me/",
         headers={"Authorization": f"Bearer {token}"}
     )
@@ -259,6 +263,7 @@ async def test_get_me(test_app_with_db):
 
 @pytest.mark.asyncio
 async def test_get_my_highlights(test_app_with_db):
+    client, _, _ = test_app_with_db
     await remove_user(username="testuser", email="cVwYH@example.com")
 
     new_user = {
@@ -268,7 +273,7 @@ async def test_get_my_highlights(test_app_with_db):
         "password": "dfASDFD2342#$#@#$@#@#",
     }
 
-    response = await test_app_with_db.post("/users/", json=new_user)
+    response = await client.post("/users/", json=new_user)
     assert response.status_code == 201
     response_dict = response.json()
     assert response_dict["username"] == new_user["username"]
@@ -283,7 +288,7 @@ async def test_get_my_highlights(test_app_with_db):
         "password": "dfASDFD2342#$#@#$@#@#"
     }
 
-    response = await test_app_with_db.post(
+    response = await client.post(
         "/users/token",
         data={
             "username": auth_payload["username"],
@@ -302,7 +307,7 @@ async def test_get_my_highlights(test_app_with_db):
 
     token = response_dict["access_token"]
 
-    response = await test_app_with_db.get(
+    response = await client.get(
         "/users/me/highlights/",
         headers={"Authorization": f"Bearer {token}"}
     )

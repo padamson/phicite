@@ -120,45 +120,93 @@ async def put_summary(id: int, payload: SummaryUpdatePayloadSchema) -> Union[dic
         return updated_summary
     return None
 
-async def post_highlight(payload: HighlightPayloadSchema) -> int:
+async def post_highlight(payload: HighlightPayloadSchema, user_id: int) -> Union[dict, None]:
+    user = await UserDB.get(id=user_id)
     highlight = PDFHighlight(
         doi=payload.doi,
         highlight=payload.highlight,
-        comment=payload.comment 
+        comment=payload.comment,
+        user=user
     )
     await highlight.save()
-    return highlight.id
+    return highlight.id, highlight.created_at
+
+async def get_highlight_public(id: int) -> Union[dict, None]:
+    highlight = await PDFHighlight.filter(id=id).first()
+    if highlight:
+        highlight_dict = dict(highlight)
+        highlight_dict['created_at'] = str(highlight.created_at)
+        return highlight_dict
+    return None
 
 async def get_highlight(id: int) -> Union[dict, None]:
-    highlight = await PDFHighlight.filter(id=id).first().values()
+    highlight = await PDFHighlight.filter(id=id).prefetch_related('user').first()
     if highlight:
-        return highlight
+        highlight_dict = dict(highlight)
+        highlight_dict['username'] = highlight.user.username
+        highlight_dict['created_at'] = str(highlight.created_at)
+        return highlight_dict
     return None
 
 async def get_all_highlights() -> List:
-    highlights = await PDFHighlight.all().values()
-    return highlights
+    highlights = await PDFHighlight.all().prefetch_related('user')
+    if highlights:
+        highlight_list = []
+        for highlight in highlights:
+            highlight_dict = dict(highlight)
+            highlight_dict['username'] = highlight.user.username
+            highlight_dict['created_at'] = str(highlight.created_at)
+            highlight_list.append(highlight_dict)
+        return highlight_list
+    return None
 
-async def delete_highlight(id: int) -> int:
-    highlight = await PDFHighlight.filter(id=id).first().delete()
-    return highlight
+async def get_all_highlights_public() -> List:
+    highlights = await PDFHighlight.all()
+    if highlights:
+        highlight_list = []
+        for highlight in highlights:
+            highlight_dict = dict(highlight)
+            highlight_dict['created_at'] = str(highlight.created_at)
+            highlight_list.append(highlight_dict)
+        return highlight_list
+    return None
 
-async def put_highlight(id: int, payload: HighlightPayloadSchema) -> Union[dict, None]:
-    existing_highlight = await PDFHighlight.filter(id=id).first().values()
+
+async def delete_highlight(id: int, user_id: int) -> Union[dict, None]:
+    highlight = await PDFHighlight.filter(id=id).prefetch_related('user').first()
+
+    if not highlight:
+        return None
+
+    if highlight.user.id != user_id:
+        raise ValueError("User does not own this highlight")
+    print(f"in delete highlight")
+    print(f"highlight.user.id: {highlight.user.id}")
+    print(f"user_id: {user_id}")
+
+    highlight_data = {"id": highlight.id}
+
+    await highlight.delete()
+
+    return highlight_data
+
+async def put_highlight(id: int, payload: HighlightPayloadSchema, user_id: int) -> Union[dict, None]:
+    highlight = await PDFHighlight.filter(id=id).prefetch_related('user').first()
     
-    if not existing_highlight:
+    if not highlight:
         return None
         
-    if existing_highlight["doi"] != payload.doi:
+    if highlight.user.id != user_id:
+        raise ValueError("User does not own this highlight")
+        
+    if highlight.doi != payload.doi:
         raise ValueError("DOI does not match existing highlight")
+
+    highlight.highlight = payload.highlight
+    highlight.comment = payload.comment
+    await highlight.save() 
     
-    highlight = await PDFHighlight.filter(id=id).update(
-        doi=payload.doi, 
-        highlight=payload.highlight, 
-        comment=payload.comment
-    )
+    highlight_dict = dict(highlight)
+    highlight_dict["created_at"] = str(highlight.created_at)
     
-    if highlight:
-        updated_highlight = await PDFHighlight.filter(id=id).first().values()
-        return updated_highlight
-    return None
+    return highlight_dict

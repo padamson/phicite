@@ -51,15 +51,9 @@ cd phicite
 poetry run python prod_testing.py
 ```
 
-## To create database migrations after changes to models
-
-```bash
-docker compose exec web aerich migrate
-```
-
 ## To reset the database
 
-To delete the existing `web_dev` and `web_test` databases in your Docker PostgreSQL container, you can use the following commands:
+To delete and recreate the existing `web_dev` and `web_test` databases in your Docker PostgreSQL container, you can use the following commands:
 
 ```bash
 # Connect to the database container
@@ -68,4 +62,20 @@ docker compose exec web-db psql -U postgres
 # Inside the PostgreSQL prompt, run:
 DROP DATABASE IF EXISTS web_dev;
 DROP DATABASE IF EXISTS web_test;
+
+# Then create them again
+CREATE DATABASE web_dev;
+CREATE DATABASE web_test;
+
+# Exit PostgreSQL
+\q
+```
+
+## Delete the migrations folder in your local repository and recreate it
+
+```bash
+rm -rf phicite/migrations
+docker compose down
+docker compose up -d --build
+docker compose exec web aerich init -t app.db.TORTOISE_ORM
 ```

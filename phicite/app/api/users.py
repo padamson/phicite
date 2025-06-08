@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Union, Annotated
+from typing import Union, Annotated, Optional
 import jwt
 from jwt.exceptions import InvalidTokenError
 from fastapi import APIRouter, HTTPException, Path, Depends, status

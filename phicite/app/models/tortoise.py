@@ -17,6 +17,7 @@ class PDFHighlight(models.Model):
     highlight = fields.JSONField()
     comment = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
+    user = fields.ForeignKeyField("models.User", related_name="pdf_highlights")
 
     def highlight_text(self):
         return " ".join([highlight["text"] for highlight in self.highlight.values()])
@@ -28,7 +29,10 @@ class PDFHighlight(models.Model):
         else:
             return f"{self.doi}: {highlighted_text}"
 
-PDFHighlightSchema = pydantic_model_creator(PDFHighlight) 
+PDFHighlightSchema = pydantic_model_creator(
+    PDFHighlight,
+    include=["id", "doi", "highlight", "comment", "created_at", "user.username"]
+    ) 
 
 # Tortoise ORM model (single table)
 class User(models.Model):

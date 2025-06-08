@@ -31,10 +31,20 @@ class HighlightPayloadSchema(BaseModel):
     highlight: dict
     comment: str | None = None
 
+class HighlightDeleteResponseSchema(BaseModel):
+    id: int
 
-class HighlightResponseSchema(BaseModel):
+class HighlightCreateResponseSchema(BaseModel):
     id: int
     doi: str
+    created_at: str
+
+class HighlightResponseSchemaPublic(HighlightCreateResponseSchema):
+    highlight: dict
+    comment: str | None = None
+
+class HighlightResponseSchema(HighlightResponseSchemaPublic):
+    username: str
 
 UserSchema = pydantic_model_creator(
     UserDB, 

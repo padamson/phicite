@@ -1,7 +1,5 @@
 from tests.conftest import current_datetime_utc_z
 from app.api import crud
-import jwt
-from app.models.pydantic import UserSchema
 
 def test_create_highlight_authenticated(test_app, monkeypatch, mock_auth, auth_headers):
         

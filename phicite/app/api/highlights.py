@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, HTTPException, Path, Depends
-from typing import Annotated, Union
+from typing import Annotated
 from app.api.users import get_current_active_user
 from app.api import crud
 from app.models.pydantic import (
@@ -11,7 +11,6 @@ from app.models.pydantic import (
     HighlightDeleteResponseSchema,
     UserSchema
 )
-from app.models.tortoise import PDFHighlightSchema, PDFHighlight
 
 router = APIRouter()
 

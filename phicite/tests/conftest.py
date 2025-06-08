@@ -17,7 +17,6 @@ from app.models.pydantic import UserSchema
 from app.auth import get_password_hash
 from app.api import crud
 
-import jwt
 
 @pytest.fixture
 def mock_user():

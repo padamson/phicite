@@ -180,7 +180,7 @@ async def delete_highlight(id: int, user_id: int) -> Union[dict, None]:
 
     if highlight.user.id != user_id:
         raise ValueError("User does not own this highlight")
-    print(f"in delete highlight")
+    print("in delete highlight")
     print(f"highlight.user.id: {highlight.user.id}")
     print(f"user_id: {user_id}")
 

@@ -133,7 +133,7 @@ async def init_test_db():
         )
         
         # Get connection
-        connection = Tortoise.get_connection("default")
+        _ = Tortoise.get_connection("default")
         
         # Get all model classes
         models = Tortoise.apps.get("models").values()

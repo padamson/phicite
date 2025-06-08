@@ -75,56 +75,30 @@ async def test_register_user_invalid_data(test_app_with_db):
         assert response.status_code in (400, 422)
 
 @pytest.mark.asyncio
-async def test_get_user(test_app_with_db):
+async def test_authenticated_user_can_get_user_info(authenticated_client_with_db, setup_users):
+    client, _ = authenticated_client_with_db
+    user1, user2 = setup_users
+    
+    for endpoint, user in zip(["username", "email", "id"], [user1, user2]):
+        val = user[endpoint]
+        response = await client.get(f"/users/{endpoint}/{val}/")
+        assert response.status_code == 200
+        response_dict = response.json()
+        assert response_dict["id"] == user["id"]
+        assert response_dict["username"] == user["username"]
+        assert response_dict["email"] == user["email"]
+        assert response_dict["full_name"] == user["full_name"]
+
+@pytest.mark.asyncio
+async def test_unauthenticated_user_can_not_get_user_info(test_app_with_db, setup_users):
     client, _, _ = test_app_with_db
-    await remove_user(username="testuser", email="cVwYH@example.com")
+    user1, user2 = setup_users
 
-    new_user = {
-        "username": "testuser",
-        "email": "cVwYH@example.com",
-        "full_name": "Test User",
-        "password": "dfASDFD2342#$#@#$@#@#"
-    }
+    for endpoint, user in zip(["username", "email", "id"], [user1, user2]):
+        val = user[endpoint]
+        response = await client.get(f"/users/{endpoint}/{val}/")
+        assert response.status_code == 401
 
-    """Integration test for getting a user by username."""
-    # Create a user first
-    response = await client.post(
-        "/users/",
-        json=new_user
-    )
-    assert response.status_code == 201
-    response_dict = response.json()
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
-    assert "id" in response_dict
-    assert "hashed_password" not in response_dict
-    assert "password" not in response_dict
-    user_id = response_dict["id"]
-
-    response = await client.get(f"/users/username/{new_user['username']}/")
-    assert response.status_code == 200
-    response_dict = response.json()
-    assert response_dict["id"] == user_id
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
-
-    response = await client.get(f"/users/email/{new_user['email']}/")
-    assert response.status_code == 200
-    response_dict = response.json()
-    assert response_dict["id"] == user_id
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
-
-    response = await client.get(f"/users/id/{user_id}/")
-    assert response.status_code == 200
-    response_dict = response.json()
-    assert response_dict["id"] == user_id
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
 
 #TODO: clean up this test
 @pytest.mark.asyncio

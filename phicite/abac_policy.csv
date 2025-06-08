@@ -1,2 +1,5 @@
-p, *, /me/, GET
-p, *, /me/highlights/, GET
+p, *, /users/me/, GET
+p, *, /users/me/highlights/, GET
+p, *, /users/id/, GET
+p, *, /users/email/, GET
+p, *, /users/username/, GET

@@ -210,3 +210,16 @@ async def put_highlight(id: int, payload: HighlightPayloadSchema, user_id: int) 
     highlight_dict["created_at"] = str(highlight.created_at)
     
     return highlight_dict
+
+async def get_user_highlights(user_id: int) -> Union[List, None]:
+    highlights = await PDFHighlight.filter(user_id=user_id).prefetch_related('user').all()
+    if highlights:
+        highlight_list = []
+        for highlight in highlights:
+            highlight_dict = dict(highlight)
+            del highlight_dict['user_id']
+            highlight_dict['username'] = highlight.user.username
+            highlight_dict['created_at'] = str(highlight.created_at)
+            highlight_list.append(highlight_dict)
+        return highlight_list
+    return None

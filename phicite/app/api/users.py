@@ -12,12 +12,15 @@ from app.models.pydantic import (
     UserSchema,
     UserInDBSchema,
     TokenSchema,
-    TokenDataSchema
+    TokenDataSchema,
+    AuthSchema
 )
 from app.auth import oauth2_scheme
+import casbin
 
 router = APIRouter()
 
+enforcer = casbin.Enforcer("abac_model.conf", "abac_policy.csv")
 
 @router.post("/", response_model=UserSchema, status_code=201)
 async def register_user(payload: UserCreate) -> UserSchema:
@@ -126,10 +129,21 @@ async def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+def get_current_authorization(resource: str, action: str):
+    async def authorize(user: Annotated[UserSchema, Depends(get_current_user)]):
+        result = enforcer.enforce(user, resource, action)
+        print(
+            f"Authorization check: user={user}, resource={resource}, action={action}, result={result}"
+        )
+        if not result:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return AuthSchema(authorized=True)
+    return authorize
 
 @router.get("/me/", response_model=UserSchema)
 async def read_users_me(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
+    current_authorization: Annotated[AuthSchema, Depends(get_current_authorization("/me/", "GET"))]
 ):
     return current_user
 
@@ -137,5 +151,9 @@ async def read_users_me(
 @router.get("/me/highlights/")
 async def read_own_highlights(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
+    current_authorization: Annotated[
+        AuthSchema, Depends(get_current_authorization("/me/highlights/", "GET"))
+    ],
 ):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+    highlights = await crud.get_user_highlights(current_user.id)
+    return highlights

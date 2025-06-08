@@ -248,6 +248,21 @@ html5lib = ["html5lib"]
 lxml = ["lxml"]
 
 [[package]]
+name = "casbin"
+version = "1.43.0"
+description = "An authorization library that supports access control models like ACL, RBAC, ABAC in Python"
+optional = false
+python-versions = ">=3.3"
+groups = ["main"]
+files = [
+    {file = "casbin-1.43.0-py3-none-any.whl", hash = "sha256:63a3d1228870250e859ccd94133fe478821093f71dd37f05e0baa0c6fea26623"},
+    {file = "casbin-1.43.0.tar.gz", hash = "sha256:d2e90ce8e72f912877851e94d37999f32c558c6ba7aba0437d483275262e86e0"},
+]
+
+[package.dependencies]
+simpleeval = ">=0.9.11"
+
+[[package]]
 name = "certifi"
 version = "2025.4.26"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -1689,6 +1704,18 @@ files = [
 ]
 
 [[package]]
+name = "simpleeval"
+version = "1.0.3"
+description = "A simple, safe single expression evaluator library."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "simpleeval-1.0.3-py3-none-any.whl", hash = "sha256:e3bdbb8c82c26297c9a153902d0fd1858a6c3774bf53ff4f134788c3f2035c38"},
+    {file = "simpleeval-1.0.3.tar.gz", hash = "sha256:67bbf246040ac3b57c29cf048657b9cf31d4e7b9d6659684daa08ca8f1e45829"},
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -1914,4 +1941,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "~=3.13"
-content-hash = "48b2b5f514880ac7abc716abe290bec8481eafef389580e57151bccdd82a6470"
+content-hash = "8472c698e77c4c5f549d2204b7eb0d63606f3683ab5668b6987a9d6cc5630ca3"

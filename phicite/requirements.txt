@@ -13,3 +13,4 @@ pyjwt==2.10.1
 passlib[bcrypt]==1.7.4
 zxcvbn==4.5.0
 python-multipart==0.0.20
+casbin==1.43.0

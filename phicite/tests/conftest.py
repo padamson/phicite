@@ -357,8 +357,8 @@ async def test_highlights(setup_users):
         
         # Yield all highlight data structures
         yield {
-            "single_highlight": single_highlight,
-            "another_user_highlight": another_user_highlight,
+            "single_highlight": [single_highlight],
+            "another_user_highlight": [another_user_highlight],
             "multiple_highlights": multiple_highlights
         }
     

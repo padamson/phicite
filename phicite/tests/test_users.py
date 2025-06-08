@@ -126,6 +126,7 @@ async def test_get_user(test_app_with_db):
     assert response_dict["email"] == new_user["email"]
     assert response_dict["full_name"] == new_user["full_name"]
 
+#TODO: clean up this test
 @pytest.mark.asyncio
 async def test_authenticate_user(test_app_with_db):
     client, _, _ = test_app_with_db
@@ -201,119 +202,51 @@ async def test_authenticate_user(test_app_with_db):
     assert response.json() == {"detail": "Incorrect username or password"}
 
 @pytest.mark.asyncio
-async def test_get_me(test_app_with_db):
-    client, _, _ = test_app_with_db
-    await remove_user(username="testuser", email="cVwYH@example.com")
-
-    new_user = {
-        "username": "testuser",
-        "email": "cVwYH@example.com",
-        "full_name": "Test User",
-        "password": "dfASDFD2342#$#@#$@#@#",
-    }
-
-    response = await client.post("/users/", json=new_user)
-    assert response.status_code == 201
-    response_dict = response.json()
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
-    assert "id" in response_dict
-    assert "hashed_password" not in response_dict
-    assert "password" not in response_dict
-
-    auth_payload = {
-        "username": "testuser",
-        "password": "dfASDFD2342#$#@#$@#@#"
-    }
-
-    response = await client.post(
-        "/users/token",
-        data={
-            "username": auth_payload["username"],
-            "password": auth_payload["password"],
-            "grant_type": "password",
-            "scope": "",
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    assert response.status_code == 200
-    response_dict = response.json()
-    assert response_dict["access_token"] is not None
-    assert response_dict["token_type"] == "bearer"
-    assert response_dict.keys() == {"access_token", "token_type"}
-
-    token = response_dict["access_token"]
+async def test_authenticated_user_can_get_me(authenticated_client_with_db):
+    client, user, = authenticated_client_with_db 
 
     response = await client.get(
-        "/users/me/",
-        headers={"Authorization": f"Bearer {token}"}
+        "/users/me/"
     )
-    print("Response status:", response.status_code)
-    print("Response body:", response.json())
     assert response.status_code == 200
     response_dict = response.json()
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
+    assert response_dict["username"] == user["username"]
+    assert response_dict["email"] == user["email"]
+    assert response_dict["full_name"] == user["full_name"]
     assert "id" in response_dict
     assert "hashed_password" not in response_dict
     assert "password" not in response_dict
 
 @pytest.mark.asyncio
-async def test_get_my_highlights(test_app_with_db):
+async def test_unauthenticated_user_can_not_get_me_or_my_highlights(test_app_with_db):
     client, _, _ = test_app_with_db
-    await remove_user(username="testuser", email="cVwYH@example.com")
-
-    new_user = {
-        "username": "testuser",
-        "email": "cVwYH@example.com",
-        "full_name": "Test User",
-        "password": "dfASDFD2342#$#@#$@#@#",
-    }
-
-    response = await client.post("/users/", json=new_user)
-    assert response.status_code == 201
-    response_dict = response.json()
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
-    assert "id" in response_dict
-    assert "hashed_password" not in response_dict
-    assert "password" not in response_dict
-
-    auth_payload = {
-        "username": "testuser",
-        "password": "dfASDFD2342#$#@#$@#@#"
-    }
-
-    response = await client.post(
-        "/users/token",
-        data={
-            "username": auth_payload["username"],
-            "password": auth_payload["password"],
-            "grant_type": "password",
-            "scope": "",
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    assert response.status_code == 200
-    response_dict = response.json()
-    assert response_dict["access_token"] is not None
-    assert response_dict["token_type"] == "bearer"
-    assert response_dict.keys() == {"access_token", "token_type"}
-
-    token = response_dict["access_token"]
 
     response = await client.get(
-        "/users/me/highlights/",
-        headers={"Authorization": f"Bearer {token}"}
+        "/users/me/"
     )
-    print("Response status:", response.status_code)
-    print("Response body:", response.json())
+    assert response.status_code == 401
+
+    response = await client.get(
+        "/users/me/highlights/"
+    )
+    assert response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_authenticated_user_can_get_my_highlights(authenticated_client_with_db, test_highlights):
+    client, user = authenticated_client_with_db
+    # build list of highlights where username == user["username"]
+    user_highlights = []
+    for highlight_keys in test_highlights.keys():
+        for highlight in test_highlights[highlight_keys]:
+            if highlight["username"] == user["username"]:
+                user_highlights.append(highlight)
+
+    response = await client.get(
+        "/users/me/highlights/"
+    )
     assert response.status_code == 200
     assert isinstance(response.json(), list)
-    response_dict = response.json()[0]
-    assert response_dict.keys() == {"item_id", "owner"}
+    assert isinstance(response.json()[0], dict)
+    assert len(response.json()) == 4
+    for highlight in response.json():
+        assert highlight in user_highlights

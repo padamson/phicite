@@ -96,7 +96,7 @@ async def test_authenticated_user_can_not_create_highlight_with_invalid_json(aut
 async def test_authenticated_user_can_read_highlight(authenticated_client_with_db, test_highlights):
     client, _ = authenticated_client_with_db
 
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
 
     response = await client.get(f"/highlights/{single_highlight['id']}/")
     assert response.status_code == 200
@@ -110,7 +110,7 @@ async def test_unauthenticated_user_can_not_read_highlight(test_app_with_db, tes
 
     client, _, _ = test_app_with_db
 
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
 
     client.headers.pop("Authorization", None)
 
@@ -123,7 +123,7 @@ async def test_unauthenticated_user_can_read_public_highlight(test_app_with_db, 
 
     client, _, _ = test_app_with_db
 
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
 
     client.headers.pop("Authorization", None)
 
@@ -191,7 +191,7 @@ async def test_authenticated_user_can_read_all_highlights(
     single_highlight = test_highlights["single_highlight"]
     another_user_highlight = test_highlights["another_user_highlight"]
     multiple_highlights = test_highlights["multiple_highlights"]
-    all_highlights = [single_highlight] + [another_user_highlight] + multiple_highlights
+    all_highlights = single_highlight + another_user_highlight + multiple_highlights
     response = await client.get("/highlights/")
     assert response.status_code == 200
     response_list = response.json()
@@ -208,7 +208,7 @@ async def test_unauthenticated_user_can_read_all_public_highlights(
     single_highlight = test_highlights["single_highlight"]
     another_user_highlight = test_highlights["another_user_highlight"]
     multiple_highlights = test_highlights["multiple_highlights"]
-    all_highlights = [single_highlight] + [another_user_highlight] + multiple_highlights
+    all_highlights = single_highlight + another_user_highlight + multiple_highlights
     client.headers.pop("Authorization", None)
     response = await client.get("/highlights/public")
     assert response.status_code == 200
@@ -225,7 +225,7 @@ async def test_authenticated_user_can_remove_their_highlight(
     authenticated_client_with_db, test_highlights
 ):
     client, _ = authenticated_client_with_db
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
 
     response = await client.delete(f"/highlights/{single_highlight['id']}/")
     assert response.status_code == 200
@@ -237,7 +237,7 @@ async def test_authenticated_user_can_not_remove_another_user_highlight(
     authenticated_client_with_db, test_highlights
 ):
     client, user = authenticated_client_with_db
-    another_user_highlight = test_highlights["another_user_highlight"]
+    another_user_highlight = test_highlights["another_user_highlight"][0]
 
     token = client.headers["Authorization"].split(" ")[1]
     current_user = await get_current_user(token)
@@ -280,7 +280,7 @@ async def test_unauthenticated_user_can_not_remove_highlight(
     test_app_with_db, test_highlights
 ):
     client, _, _ = test_app_with_db
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
     client.headers.pop("Authorization", None)
     response = await client.delete(f"/highlights/{single_highlight['id']}/")
     assert response.status_code == 401
@@ -293,7 +293,7 @@ async def test_authenticated_user_can_update_their_highlight(
     authenticated_client_with_db, test_highlights
 ):
     client, _ = authenticated_client_with_db
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
     update_payload = {
         "doi": "10.1234/example.5678",
         "highlight": {"1": {"rect": [100, 200, 300, 220], "text": "updated highlight"}},
@@ -360,7 +360,7 @@ async def test_authenticated_user_tries_to_update_highlight_with_doi_not_matchin
     authenticated_client_with_db, test_highlights
 ):
     client, _ = authenticated_client_with_db
-    single_highlight = test_highlights["single_highlight"]
+    single_highlight = test_highlights["single_highlight"][0]
     
     update_payload = {
         "doi": "10.9876/example.5432",  # Different DOI

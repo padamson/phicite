@@ -165,21 +165,14 @@ def test_register_user_duplicate_email(test_app, monkeypatch):
     assert response.status_code == 400
     assert "Email 'existingemail@example.com' already exists" in response.json()["detail"]
 
-def test_get_user_by_username(test_app, monkeypatch):
-    mock_user = UserSchema(
-        id=1,
-        username="testuser",
-        email="cVwYH@example.com",
-        full_name="Test User",
-        disabled=False
-    )
+def test_get_user_by_username(test_app, monkeypatch, mock_auth, auth_headers):
     
     # Mock User.filter to return our mock user when filtering by username
     def mock_filter(*args, **kwargs):
-        if kwargs.get('username') == mock_user.username:
+        if kwargs.get('username') == mock_auth.username:
             class MockQuerySet:
                 async def first(self):
-                    return mock_user
+                    return mock_auth
             return MockQuerySet()
         class EmptyQuerySet:
             async def first(self):
@@ -188,60 +181,22 @@ def test_get_user_by_username(test_app, monkeypatch):
     # Apply the mock
     monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
     # Make the request
-    response = test_app.get(f"/users/username/{mock_user.username}/")
-    # Verify response
-    assert response.status_code == 200
-    user_data = response.json()
-    assert user_data["username"] == mock_user.username
-    assert user_data["email"] == mock_user.email
-    assert user_data["full_name"] == mock_user.full_name
-
-def test_get_user_by_email(test_app, monkeypatch):
-    mock_user = UserSchema(
-        id=1,
-        username="testuser",
-        email="cVwYH@example.com",
-        full_name="Test User",
-        disabled=False
+    response = test_app.get(
+        f"/users/username/{mock_auth.username}/", headers=auth_headers
     )
-    
-    # Mock User.filter to return our mock user when filtering by email
-    def mock_filter(*args, **kwargs):
-        if kwargs.get('email') == mock_user.email:
-            class MockQuerySet:
-                async def first(self):
-                    return mock_user
-            return MockQuerySet()
-        class EmptyQuerySet:
-            async def first(self):
-                return None
-        return EmptyQuerySet()
-    # Apply the mock
-    monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
-    # Make the request
-    response = test_app.get(f"/users/email/{mock_user.email}/")
     # Verify response
     assert response.status_code == 200
     user_data = response.json()
-    assert user_data["username"] == mock_user.username
-    assert user_data["email"] == mock_user.email
-    assert user_data["full_name"] == mock_user.full_name
+    assert user_data["username"] == mock_auth.username
+    assert user_data["email"] == mock_auth.email
+    assert user_data["full_name"] == mock_auth.full_name
 
-def test_get_user_by_id(test_app, monkeypatch):
-    mock_user = UserSchema(
-        id=1,
-        username="testuser",
-        email="cVwYH@example.com",
-        full_name="Test User",
-        disabled=False
-    )
-    
-    # Mock User.filter to return our mock user when filtering by id
+def test_get_user_by_email(test_app, monkeypatch, mock_auth, auth_headers):
     def mock_filter(*args, **kwargs):
-        if kwargs.get('id') == mock_user.id:
+        if kwargs.get('email') == mock_auth.email:
             class MockQuerySet:
                 async def first(self):
-                    return mock_user
+                    return mock_auth
             return MockQuerySet()
         class EmptyQuerySet:
             async def first(self):
@@ -250,13 +205,35 @@ def test_get_user_by_id(test_app, monkeypatch):
     # Apply the mock
     monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
     # Make the request
-    response = test_app.get(f"/users/id/{mock_user.id}/")
+    response = test_app.get(f"/users/email/{mock_auth.email}/", headers=auth_headers)
     # Verify response
     assert response.status_code == 200
     user_data = response.json()
-    assert user_data["username"] == mock_user.username
-    assert user_data["email"] == mock_user.email
-    assert user_data["full_name"] == mock_user.full_name
+    assert user_data["username"] == mock_auth.username
+    assert user_data["email"] == mock_auth.email
+    assert user_data["full_name"] == mock_auth.full_name
+
+def test_get_user_by_id(test_app, monkeypatch, mock_auth, auth_headers):
+    def mock_filter(*args, **kwargs):
+        if kwargs.get('id') == mock_auth.id:
+            class MockQuerySet:
+                async def first(self):
+                    return mock_auth
+            return MockQuerySet()
+        class EmptyQuerySet:
+            async def first(self):
+                return None
+        return EmptyQuerySet()
+    # Apply the mock
+    monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
+    # Make the request
+    response = test_app.get(f"/users/id/{mock_auth.id}/", headers=auth_headers)
+    # Verify response
+    assert response.status_code == 200
+    user_data = response.json()
+    assert user_data["username"] == mock_auth.username
+    assert user_data["email"] == mock_auth.email
+    assert user_data["full_name"] == mock_auth.full_name
 
 @pytest.mark.asyncio
 async def test_authenticate_user(monkeypatch):

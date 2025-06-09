@@ -254,12 +254,12 @@ async def test_authenticate_user(monkeypatch):
     
     monkeypatch.setattr(auth, "verify_password", mock_verify_password)
     
-    async def mock_get_user_by_username(username):
+    async def mock_get_user_in_db_by_username(username):
         if username == username_from_form:
             return mock_user
         return None
     
-    monkeypatch.setattr(crud, "get_user_by_username", mock_get_user_by_username)
+    monkeypatch.setattr(crud, "get_user_in_db_by_username", mock_get_user_in_db_by_username)
 
     authenticated_user = await authenticate_user(username_from_form, password_from_form)
 

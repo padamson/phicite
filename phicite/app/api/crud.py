@@ -4,7 +4,9 @@ from app.models.pydantic import (
     SummaryPayloadSchema,
     SummaryUpdatePayloadSchema,
     HighlightPayloadSchema,
-    UserCreate
+    UserCreate,
+    UserSchema,
+    UserInDBSchema
 )
 from app.models.tortoise import TextSummary, PDFHighlight, User as UserDB
 from app.auth import get_password_hash
@@ -45,6 +47,21 @@ async def post_user(user: UserCreate) -> Union[dict, None]:
     
     return user_obj
 
+async def get_user_in_db_by_username(username: str) -> Union[dict, None]:
+    """
+    Retrieve a user by username.
+    
+    Args:
+        username: The username of the user to retrieve
+        
+    Returns:
+        The user if found, otherwise None
+    """
+    user = await UserDB.filter(username=username).first()
+    if user:
+        return await UserInDBSchema.from_tortoise_orm(user)
+    return None
+
 async def get_user_by_username(username: str) -> Union[dict, None]:
     """
     Retrieve a user by username.
@@ -57,7 +74,7 @@ async def get_user_by_username(username: str) -> Union[dict, None]:
     """
     user = await UserDB.filter(username=username).first()
     if user:
-        return user
+        return await UserSchema.from_tortoise_orm(user)
     return None
 
 async def get_user_by_email(email: str) -> Union[dict, None]:

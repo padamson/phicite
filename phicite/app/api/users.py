@@ -22,7 +22,7 @@ router = APIRouter()
 
 enforcer = casbin.Enforcer("abac_model.conf", "abac_policy.csv")
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)])-> UserSchema:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -46,21 +46,19 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 async def get_current_active_user(
     current_user: Annotated[UserSchema, Depends(get_current_user)],
-):
+)-> UserSchema:
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-def get_current_authorization(resource: str, action: str):
-    async def authorize(user: Annotated[UserSchema, Depends(get_current_user)]):
-        result = enforcer.enforce(user, resource, action)
-        print(
-            f"Authorization check: user={user}, resource={resource}, action={action}, result={result}"
-        )
+def get_authorized_active_user(resource: str, action: str)->AuthSchema:
+    async def get_user_and_authorize(current_active_user: Annotated[UserSchema, Depends(get_current_active_user)]):
+        result = enforcer.enforce(current_active_user, resource, action)
+        print(f"current_active_user type: {type(current_active_user)}")
         if not result:
             raise HTTPException(status_code=403, detail="Forbidden")
-        return AuthSchema(authorized=True)
-    return authorize
+        return AuthSchema(**current_active_user.model_dump(), authorized=True)
+    return get_user_and_authorize
 
 @router.post("/", response_model=UserSchema, status_code=201)
 async def register_user(payload: UserCreate) -> UserSchema:
@@ -74,7 +72,7 @@ async def register_user(payload: UserCreate) -> UserSchema:
 async def get_user_by_username(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
     current_authorization: Annotated[
-        AuthSchema, Depends(get_current_authorization("/users/username/", "GET"))
+        AuthSchema, Depends(get_authorized_active_user("/users/username/", "GET"))
     ],
     username: str = Path(..., min_length=1),
 ) -> UserSchema:
@@ -88,7 +86,7 @@ async def get_user_by_username(
 async def get_user_by_email(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
     current_authorization: Annotated[
-        AuthSchema, Depends(get_current_authorization("/users/email/", "GET"))
+        AuthSchema, Depends(get_authorized_active_user("/users/email/", "GET"))
     ],
     email: str = Path(..., min_length=1),
 ) -> UserSchema:
@@ -102,7 +100,7 @@ async def get_user_by_email(
 async def get_user_by_id(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
     current_authorization: Annotated[
-        AuthSchema, Depends(get_current_authorization("/users/id/", "GET"))
+        AuthSchema, Depends(get_authorized_active_user("/users/id/", "GET"))
     ],
     id: int = Path(..., gt=0),
 ) -> UserSchema:
@@ -115,7 +113,7 @@ async def get_user_by_id(
 async def authenticate_user(
     username: str, password: str
 ) -> Union[UserInDBSchema, bool]:
-    user = await crud.get_user_by_username(username)
+    user = await crud.get_user_in_db_by_username(username)
     if not user:
         print(f"User {username} not found")
         return False
@@ -158,23 +156,18 @@ async def login_for_access_token(
     return TokenSchema(access_token=access_token, token_type="bearer")
 
 
-
-
-
 @router.get("/me/", response_model=UserSchema)
 async def read_users_me(
-    current_user: Annotated[UserSchema, Depends(get_current_active_user)],
-    current_authorization: Annotated[AuthSchema, Depends(get_current_authorization("/users/me/", "GET"))]
+    current_authorized_user: Annotated[AuthSchema, Depends(get_authorized_active_user("/users/me/", "GET"))]
 ):
-    return current_user
+    return UserSchema(**current_authorized_user.model_dump(exclude=("authorized",)))
 
 
 @router.get("/me/highlights/")
 async def read_own_highlights(
-    current_user: Annotated[UserSchema, Depends(get_current_active_user)],
-    current_authorization: Annotated[
-        AuthSchema, Depends(get_current_authorization("/users/me/highlights/", "GET"))
+    current_authorized_user: Annotated[
+        AuthSchema, Depends(get_authorized_active_user("/users/me/highlights/", "GET"))
     ],
 ):
-    highlights = await crud.get_user_highlights(current_user.id)
+    highlights = await crud.get_user_highlights(current_authorized_user.id)
     return highlights

@@ -99,5 +99,5 @@ TokenDataSchema = pydantic_model_creator(
     exclude=("id",)
 )
 
-class AuthSchema(BaseModel):
+class AuthSchema(UserSchema):
     authorized: bool

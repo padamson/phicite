@@ -4,9 +4,7 @@ from app.api import crud
 from app.models.pydantic import UserCreate, UserSchema, UserInDBSchema
 from app.api.users import authenticate_user
 
-def test_register_user(test_app, monkeypatch):
-    """Test user registration endpoint"""
-    # Test user data
+def test_register_regular_user(test_app, monkeypatch):
     new_user_create = UserCreate(
         username="testuser",
         email="test@example.com",
@@ -20,7 +18,8 @@ def test_register_user(test_app, monkeypatch):
         username=new_user_create.username,
         email=new_user_create.email,
         full_name=new_user_create.full_name,
-        disabled=False
+        disabled=False,
+        is_admin=False
     )
     
     # Mock the password hashing function
@@ -45,6 +44,7 @@ def test_register_user(test_app, monkeypatch):
     assert user_data["email"] == new_user_response.email
     assert user_data["full_name"] == new_user_response.full_name
     assert user_data["id"] == new_user_response.id
+    assert user_data["is_admin"] == new_user_response.is_admin
     assert new_user_create.password not in str(user_data)
     assert "hashed_password" not in str(user_data)
 
@@ -165,75 +165,49 @@ def test_register_user_duplicate_email(test_app, monkeypatch):
     assert response.status_code == 400
     assert "Email 'existingemail@example.com' already exists" in response.json()["detail"]
 
-def test_get_user_by_username(test_app, monkeypatch, mock_auth, auth_headers):
-    
-    # Mock User.filter to return our mock user when filtering by username
-    def mock_filter(*args, **kwargs):
-        if kwargs.get('username') == mock_auth.username:
-            class MockQuerySet:
-                async def first(self):
-                    return mock_auth
-            return MockQuerySet()
-        class EmptyQuerySet:
-            async def first(self):
-                return None
-        return EmptyQuerySet()
-    # Apply the mock
-    monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
-    # Make the request
-    response = test_app.get(
-        f"/users/username/{mock_auth.username}/", headers=auth_headers
-    )
-    # Verify response
-    assert response.status_code == 200
-    user_data = response.json()
-    assert user_data["username"] == mock_auth.username
-    assert user_data["email"] == mock_auth.email
-    assert user_data["full_name"] == mock_auth.full_name
+#TODO: fix to mock auth for regular user and admin user
+@pytest.mark.asyncio
+async def test_admin_user_get_user_info(
+    test_app,
+    mock_get_user_by_token_data_admin,
+    mock_get_user_by_username,
+    mock_get_user_by_email,
+    mock_get_user_by_id,
+    mock_admin_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_admin_user
+):
 
-def test_get_user_by_email(test_app, monkeypatch, mock_auth, auth_headers):
-    def mock_filter(*args, **kwargs):
-        if kwargs.get('email') == mock_auth.email:
-            class MockQuerySet:
-                async def first(self):
-                    return mock_auth
-            return MockQuerySet()
-        class EmptyQuerySet:
-            async def first(self):
-                return None
-        return EmptyQuerySet()
-    # Apply the mock
-    monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
-    # Make the request
-    response = test_app.get(f"/users/email/{mock_auth.email}/", headers=auth_headers)
-    # Verify response
-    assert response.status_code == 200
-    user_data = response.json()
-    assert user_data["username"] == mock_auth.username
-    assert user_data["email"] == mock_auth.email
-    assert user_data["full_name"] == mock_auth.full_name
-
-def test_get_user_by_id(test_app, monkeypatch, mock_auth, auth_headers):
-    def mock_filter(*args, **kwargs):
-        if kwargs.get('id') == mock_auth.id:
-            class MockQuerySet:
-                async def first(self):
-                    return mock_auth
-            return MockQuerySet()
-        class EmptyQuerySet:
-            async def first(self):
-                return None
-        return EmptyQuerySet()
-    # Apply the mock
-    monkeypatch.setattr("app.models.tortoise.User.filter", mock_filter)
-    # Make the request
-    response = test_app.get(f"/users/id/{mock_auth.id}/", headers=auth_headers)
-    # Verify response
-    assert response.status_code == 200
-    user_data = response.json()
-    assert user_data["username"] == mock_auth.username
-    assert user_data["email"] == mock_auth.email
-    assert user_data["full_name"] == mock_auth.full_name
+    assert mock_user.username == "testuser"
+    get_user_by_token_data_call_count = 0
+    get_user_by_username_call_count = 0
+    get_user_by_email_call_count = 0
+    get_user_by_id_call_count = 0
+    for endpoint, user_val in zip(["username", "email", "id"], [mock_user.username, mock_user.email, mock_user.id]):
+        response = test_app.get(
+            f"/users/admin/{endpoint}/{user_val}/", headers=auth_headers
+        )
+        assert response.status_code == 200
+        get_user_by_token_data_call_count += 1
+        assert mock_get_user_by_token_data_admin.call_count == get_user_by_token_data_call_count
+        assert mock_get_user_by_token_data_admin.call_args_list[-1].args[0].username == mock_admin_user.username
+        if endpoint == "username":
+            get_user_by_username_call_count += 1
+            assert mock_get_user_by_username.call_args_list[-1].args[0] == mock_user.username
+        elif endpoint == "email":
+            get_user_by_email_call_count += 1
+            assert mock_get_user_by_email.call_args_list[-1].args[0] == mock_user.email
+        elif endpoint == "id":
+            get_user_by_id_call_count += 1
+            assert mock_get_user_by_id.call_args_list[-1].args[0] == mock_user.id
+        assert mock_get_user_by_username.call_count == get_user_by_username_call_count
+        assert mock_get_user_by_email.call_count == get_user_by_email_call_count
+        assert mock_get_user_by_id.call_count == get_user_by_id_call_count
+        user_data = response.json()
+        assert user_data["username"] == mock_user.username
+        assert user_data["email"] == mock_user.email
+        assert user_data["full_name"] == mock_user.full_name
 
 @pytest.mark.asyncio
 async def test_authenticate_user(monkeypatch):

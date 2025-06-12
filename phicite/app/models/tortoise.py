@@ -41,6 +41,7 @@ class User(models.Model):
     full_name = fields.CharField(max_length=100, null=True)
     disabled = fields.BooleanField(default=False)
     hashed_password = fields.CharField(max_length=255)
+    is_admin = fields.BooleanField(default=False)
 
     def __str__(self):
         return self.username

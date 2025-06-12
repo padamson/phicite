@@ -1,5 +1,11 @@
-p, *, /users/me/, GET
-p, *, /users/me/highlights/, GET
-p, *, /users/id/, GET
-p, *, /users/email/, GET
-p, *, /users/username/, GET
+# regular user policies
+p, r.sub.disabled == False, /users/me/, GET
+p, r.sub.disabled == False, /users/me/highlights/, GET
+
+# admin policies
+p, r.sub.is_admin == True, /users/admin/username/, GET
+p, r.sub.is_admin == True, /users/admin/username/, DELETE
+p, r.sub.is_admin == True, /users/admin/id/, GET
+p, r.sub.is_admin == True, /users/admin/id/, DELETE
+p, r.sub.is_admin == True, /users/admin/email/, GET
+p, r.sub.is_admin == True, /users/admin/email/, DELETE

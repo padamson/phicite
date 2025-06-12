@@ -2,71 +2,91 @@ import pytest
 
 from app.models.tortoise import User
 
-#TODO: do this better; clean up users after tests
-async def remove_user(username: str = None, email: str = None):
-    existing_user = await User.filter(username="testuser").first()
 
-    if existing_user:
-        print(f"Deleting existing user: {existing_user.username}")
-        await existing_user.delete()
-
-    existing_user = await User.filter(email="cVwYH@example.com").first()
-
-    if existing_user:
-        print(f"Deleting existing user: {existing_user.email}")
-        await existing_user.delete()
 
 @pytest.mark.asyncio
-async def test_create_user_valid_json(test_app_with_db):
-    client, _, _ = test_app_with_db
-    await remove_user(username="newuser", email="cVwYH@example.com")
+async def test_register_user_valid_json(test_app_with_db):
+    client, _, _, _ = test_app_with_db
 
-    """Integration test for creating a user with valid JSON."""
+    user_dict = {
+        "username": "testuser2",
+        "email": "test2@example.com",
+        "full_name": "Test User2",
+        "password": "dfASDFD2342#$#@#$@#@#"
+    }
+
     response = await client.post(
         "/users/",
-        json={
-            "username": "newuser",
-            "email": "cVwYH@example.com",
-            "full_name": "New User",
-            "password": "dfASDFD2342#$#@#$@#@#"
-        }
+        json=user_dict
     )
     print(response.json())  # Debugging output
     assert response.status_code == 201
     response_dict = response.json()
-    assert response_dict["username"] == "newuser"
-    assert response_dict["email"] == "cVwYH@example.com"
-    assert response_dict["full_name"] == "New User"
+    assert response_dict["username"] == user_dict["username"]
+    assert response_dict["email"] == user_dict["email"]
+    assert response_dict["full_name"] == user_dict["full_name"]
     assert "id" in response_dict
     assert "hashed_password" not in response_dict
     assert "password" not in response_dict
 
+    # Use tortoise ORM to clean up after test
+    user = await User.get(id=response_dict["id"])
+    await user.delete()
+
+
 #TODO: parameterize this test with specific error messages for different invalid cases
 @pytest.mark.asyncio
 async def test_register_user_invalid_data(test_app_with_db):
-    client, _, _ = test_app_with_db
-    await remove_user(username="testuser", email="test@example.com")
+    client, _, _, _ = test_app_with_db
+
+    before_users = await User.all()
 
     test_cases = [
         # Missing username
         {
-            "email": "test@example.com",
+            "email": "test2@example.com",
             "full_name": "Test User",
             "password": "dfASDFD2342#$#@#$@#@#"
         },
         # Invalid email
         {
-            "username": "testuser",
+            "username": "testuser2",
             "email": "not-an-email",
+            "full_name": "Test User",
+            "password": "dfASDFD2342#$#@#$@#@#"
+        },
+        # Missing password
+        {
+            "username": "testuser2",
+            "email": "test2@example.com",
+            "full_name": "Test User"
+        },
+        # Missing email
+        {
+            "username": "testuser2",
             "full_name": "Test User",
             "password": "dfASDFD2342#$#@#$@#@#"
         },
         # Password too short (if you have validation)
         {
-            "username": "testuser",
-            "email": "test@example.com",
+            "username": "testuser2",
+            "email": "test2@example.com",
             "full_name": "Test User",
             "password": "short"
+        },
+        # Duplicate username
+        {
+            "username": "testuser",
+            "email": "test2@example.com",
+            "full_name": "Test User",
+            "password": "dfASDFD2342#$#@#$@#@#"
+        },
+        # Duplicate email
+        {
+            "username": "testuser2",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "password": "dfASDFD2342#$#@#$@#@#"
         }
     ]
     
@@ -74,14 +94,56 @@ async def test_register_user_invalid_data(test_app_with_db):
         response = await client.post("/users/", json=invalid_data)
         assert response.status_code in (400, 422)
 
+    after_users = await User.all()
+    assert before_users == after_users
+
+
 @pytest.mark.asyncio
-async def test_authenticated_user_can_get_user_info(authenticated_client_with_db, setup_users):
+async def test_admin_user_can_delete_user(authenticated_admin_client_with_db, setup_users):
+    client, _ = authenticated_admin_client_with_db
+    user1, user2, admin = setup_users
+
+    for user in [user1, user2]:
+        response = await client.delete(f"/users/admin/username/{user['username']}/")
+        assert response.status_code == 200
+
+    # Check that the user was deleted using tortoise ORM
+    for user in [user1, user2]:
+        user_in_db = await User.filter(username=user["username"]).first()
+        assert not user_in_db
+
+@pytest.mark.asyncio
+async def test_regular_user_can_not_delete_user(authenticated_client_with_db, setup_users):
     client, _ = authenticated_client_with_db
-    user1, user2 = setup_users
+    user1, user2, admin = setup_users
+
+    for user in [user1, user2]:
+        response = await client.delete(f"/users/admin/username/{user['username']}/")
+        assert response.status_code == 403
+
+    # Check that the user was not deleted using tortoise ORM
+    for user in [user1, user2]:
+        user_in_db = await User.filter(username=user["username"]).first()
+        assert user_in_db == User(**user)
+
+@pytest.mark.asyncio
+async def test_regular_user_can_not_get_user_info(authenticated_client_with_db, setup_users):
+    client, _ = authenticated_client_with_db
+    user1, user2, admin = setup_users
     
     for endpoint, user in zip(["username", "email", "id"], [user1, user2]):
         val = user[endpoint]
-        response = await client.get(f"/users/{endpoint}/{val}/")
+        response = await client.get(f"/users/admin/{endpoint}/{val}/")
+        assert response.status_code == 403
+
+@pytest.mark.asyncio
+async def test_admin_user_can_get_user_info(authenticated_admin_client_with_db, setup_users):
+    client, _ = authenticated_admin_client_with_db
+    user1, user2, admin = setup_users
+    
+    for endpoint, user in zip(["username", "email", "id"], [user1, user2]):
+        val = user[endpoint]
+        response = await client.get(f"/users/admin/{endpoint}/{val}/")
         assert response.status_code == 200
         response_dict = response.json()
         assert response_dict["id"] == user["id"]
@@ -91,24 +153,24 @@ async def test_authenticated_user_can_get_user_info(authenticated_client_with_db
 
 @pytest.mark.asyncio
 async def test_unauthenticated_user_can_not_get_user_info(test_app_with_db, setup_users):
-    client, _, _ = test_app_with_db
-    user1, user2 = setup_users
+    client, _, _, _ = test_app_with_db
+    user1, user2, admin = setup_users
 
     for endpoint, user in zip(["username", "email", "id"], [user1, user2]):
         val = user[endpoint]
-        response = await client.get(f"/users/{endpoint}/{val}/")
+        response = await client.get(f"/users/admin/{endpoint}/{val}/")
         assert response.status_code == 401
 
 
 #TODO: clean up this test
 @pytest.mark.asyncio
-async def test_authenticate_user(test_app_with_db):
-    client, _, _ = test_app_with_db
-    await remove_user(username="testuser", email="cVwYH@example.com")
+async def test_authenticate_user(test_app_with_db, setup_users):
+    client, _, _, _ = test_app_with_db
+    user1, user2, admin = setup_users
 
     auth_payload = {
-        "username": "testuser",
-        "password": "dfASDFD2342#$#@#$@#@#"
+        "username": "wrong_username",
+        "password": "wrong_password"
     }
 
     # Create username and password form input
@@ -126,23 +188,12 @@ async def test_authenticate_user(test_app_with_db):
     assert response.status_code == 401
     assert response.json() == {"detail": "Incorrect username or password"}
 
-    new_user = {
-        "username": "testuser",
-        "email": "cVwYH@example.com",
-        "full_name": "Test User",
-        "password": "dfASDFD2342#$#@#$@#@#",
+    auth_payload = {
+        "username": user1["username"],
+        "password": user1["password"]
     }
 
-    response = await client.post("/users/", json=new_user)
-    assert response.status_code == 201
-    response_dict = response.json()
-    assert response_dict["username"] == new_user["username"]
-    assert response_dict["email"] == new_user["email"]
-    assert response_dict["full_name"] == new_user["full_name"]
-    assert "id" in response_dict
-    assert "hashed_password" not in response_dict
-    assert "password" not in response_dict
-
+    # Create username and password form input
     response = await client.post(
         "/users/token",
         data={
@@ -160,7 +211,7 @@ async def test_authenticate_user(test_app_with_db):
     assert response_dict["token_type"] == "bearer"
     assert response_dict.keys() == {"access_token", "token_type"}
 
-    auth_payload = {"username": "testuser", "password": "wrongpassword"}
+    auth_payload = {"username": user1["username"], "password": "wrong_password"}
 
     response = await client.post(
         "/users/token",
@@ -193,7 +244,7 @@ async def test_authenticated_user_can_get_me(authenticated_client_with_db):
 
 @pytest.mark.asyncio
 async def test_unauthenticated_user_can_not_get_me_or_my_highlights(test_app_with_db):
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
 
     response = await client.get(
         "/users/me/"

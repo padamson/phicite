@@ -6,7 +6,8 @@ from app.models.pydantic import (
     HighlightPayloadSchema,
     UserCreate,
     UserSchema,
-    UserInDBSchema
+    UserInDBSchema,
+    TokenDataSchema
 )
 from app.models.tortoise import TextSummary, PDFHighlight, User as UserDB
 from app.auth import get_password_hash
@@ -47,6 +48,23 @@ async def post_user(user: UserCreate) -> Union[dict, None]:
     
     return user_obj
 
+async def delete_user_in_db_by_username(username: str) -> Union[dict, None]:
+    """
+    Delete a user by username.
+    
+    Args:
+        username: The username of the user to delete
+        
+    Returns:
+        The deleted user if found, otherwise None
+    """
+    user = await UserDB.filter(username=username).first()
+    if user:
+        await user.delete()
+        return {"message": "User deleted successfully"}
+    else:
+        return {"message": "User not found"}
+
 async def get_user_in_db_by_username(username: str) -> Union[dict, None]:
     """
     Retrieve a user by username.
@@ -60,6 +78,21 @@ async def get_user_in_db_by_username(username: str) -> Union[dict, None]:
     user = await UserDB.filter(username=username).first()
     if user:
         return await UserInDBSchema.from_tortoise_orm(user)
+    return None
+
+async def get_user_by_token_data(token_data: TokenDataSchema) -> Union[dict, None]:
+    """
+    Retrieve a user by token data.
+    
+    Args:
+        token_data: The token data of the user to retrieve
+        
+    Returns:
+        The user if found, otherwise None
+    """
+    user = await UserDB.filter(username=token_data.username).first()
+    if user:
+        return await UserSchema.from_tortoise_orm(user)
     return None
 
 async def get_user_by_username(username: str) -> Union[dict, None]:

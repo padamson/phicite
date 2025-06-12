@@ -38,7 +38,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)])-> User
         token_data = TokenDataSchema(username=username)
     except InvalidTokenError:
         raise credentials_exception
-    user = await crud.get_user_by_username(username=token_data.username)
+    user = await crud.get_user_by_token_data(token_data)
     if user is None:
         raise credentials_exception
     return user
@@ -53,8 +53,10 @@ async def get_current_active_user(
 
 def get_authorized_active_user(resource: str, action: str)->AuthSchema:
     async def get_user_and_authorize(current_active_user: Annotated[UserSchema, Depends(get_current_active_user)]):
+        print(f"User: {current_active_user}, is_admin: {current_active_user.is_admin}")
+        print(f"Resource: {resource}, Action: {action}")
         result = enforcer.enforce(current_active_user, resource, action)
-        print(f"current_active_user type: {type(current_active_user)}")
+        print(f"Authorization result: {result}")
         if not result:
             raise HTTPException(status_code=403, detail="Forbidden")
         return AuthSchema(**current_active_user.model_dump(), authorized=True)
@@ -68,11 +70,10 @@ async def register_user(payload: UserCreate) -> UserSchema:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/username/{username}/", response_model=UserSchema)
-async def get_user_by_username(
-    current_user: Annotated[UserSchema, Depends(get_current_active_user)],
+@router.get("/admin/username/{username}/", response_model=UserSchema)
+async def get_user_info_by_username(
     current_authorization: Annotated[
-        AuthSchema, Depends(get_authorized_active_user("/users/username/", "GET"))
+        AuthSchema, Depends(get_authorized_active_user("/users/admin/username/", "GET"))
     ],
     username: str = Path(..., min_length=1),
 ) -> UserSchema:
@@ -81,12 +82,20 @@ async def get_user_by_username(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-
-@router.get("/email/{email}/", response_model=UserSchema)
-async def get_user_by_email(
-    current_user: Annotated[UserSchema, Depends(get_current_active_user)],
+@router.delete("/admin/username/{username}/", response_model=dict)
+async def delete_user_by_username(
     current_authorization: Annotated[
-        AuthSchema, Depends(get_authorized_active_user("/users/email/", "GET"))
+        AuthSchema, Depends(get_authorized_active_user("/users/admin/username/", "DELETE"))
+    ],
+    username: str = Path(..., min_length=1),
+) -> UserSchema:
+    return await crud.delete_user_in_db_by_username(username)
+
+
+@router.get("/admin/email/{email}/", response_model=UserSchema)
+async def get_user_info_by_email(
+    current_authorization: Annotated[
+        AuthSchema, Depends(get_authorized_active_user("/users/admin/email/", "GET"))
     ],
     email: str = Path(..., min_length=1),
 ) -> UserSchema:
@@ -96,11 +105,10 @@ async def get_user_by_email(
     return user
 
 
-@router.get("/id/{id}/", response_model=UserSchema)
-async def get_user_by_id(
-    current_user: Annotated[UserSchema, Depends(get_current_active_user)],
+@router.get("/admin/id/{id}/", response_model=UserSchema)
+async def get_user_info_by_id(
     current_authorization: Annotated[
-        AuthSchema, Depends(get_authorized_active_user("/users/id/", "GET"))
+        AuthSchema, Depends(get_authorized_active_user("/users/admin/id/", "GET"))
     ],
     id: int = Path(..., gt=0),
 ) -> UserSchema:

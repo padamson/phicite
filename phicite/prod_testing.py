@@ -135,6 +135,7 @@ if data["id"] != summary_id:
 
 test_passed("Summary deleted successfully")
 
+
 # Test highlight creation
 print_separator("Testing POST /highlights/")
 response = requests.post(

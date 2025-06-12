@@ -40,7 +40,7 @@ async def test_authenticated_user_can_create_highlight_with_valid_json(
 
 @pytest.mark.asyncio
 async def test_unauthenticated_user_cannot_create_highlight(test_app_with_db):
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
     response = await client.post(
         "/highlights/",
         json=highlight_json
@@ -108,7 +108,7 @@ async def test_authenticated_user_can_read_highlight(authenticated_client_with_d
 @pytest.mark.asyncio
 async def test_unauthenticated_user_can_not_read_highlight(test_app_with_db, test_highlights):
 
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
 
     single_highlight = test_highlights["single_highlight"][0]
 
@@ -121,7 +121,7 @@ async def test_unauthenticated_user_can_not_read_highlight(test_app_with_db, tes
 @pytest.mark.asyncio
 async def test_unauthenticated_user_can_read_public_highlight(test_app_with_db, test_highlights):
 
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
 
     single_highlight = test_highlights["single_highlight"][0]
 
@@ -138,7 +138,7 @@ async def test_unauthenticated_user_can_read_public_highlight(test_app_with_db, 
 @pytest.mark.asyncio
 async def test_unauthenticated_user_tries_to_read_highlight_with_incorrect_id(test_app_with_db):
 
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
 
     client.headers.pop("Authorization", None)
 
@@ -204,7 +204,7 @@ async def test_authenticated_user_can_read_all_highlights(
 async def test_unauthenticated_user_can_read_all_public_highlights(
     test_app_with_db, test_highlights
 ):
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
     single_highlight = test_highlights["single_highlight"]
     another_user_highlight = test_highlights["another_user_highlight"]
     multiple_highlights = test_highlights["multiple_highlights"]
@@ -279,7 +279,7 @@ async def test_authenticated_user_tries_to_remove_highlight_with_incorrect_id(
 async def test_unauthenticated_user_can_not_remove_highlight(
     test_app_with_db, test_highlights
 ):
-    client, _, _ = test_app_with_db
+    client, _, _, _ = test_app_with_db
     single_highlight = test_highlights["single_highlight"][0]
     client.headers.pop("Authorization", None)
     response = await client.delete(f"/highlights/{single_highlight['id']}/")

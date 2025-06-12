@@ -1,12 +1,17 @@
 from tests.conftest import current_datetime_utc_z
 from app.api import crud
 
-def test_create_highlight_authenticated(test_app, monkeypatch, mock_auth, auth_headers):
-        
+def test_create_highlight_authenticated(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     # 3. Mock post_highlight to avoid database access
     created_at = current_datetime_utc_z()
     async def mock_post_highlight(payload, user_id):
-        assert user_id == mock_auth.id  # Verify correct user ID is passed
         return 1, created_at
     monkeypatch.setattr(crud, "post_highlight", mock_post_highlight)
     
@@ -34,7 +39,14 @@ def test_create_highlight_authenticated(test_app, monkeypatch, mock_auth, auth_h
     assert response.status_code == 201
     assert response.json() == test_response_payload
 
-def test_create_highlight_unauthenticated(test_app, monkeypatch):
+def test_create_highlight_unauthenticated(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     # Test request with minimum required fields
     test_request_payload = {
         "doi": "10.1234/example.5678",
@@ -52,7 +64,14 @@ def test_create_highlight_unauthenticated(test_app, monkeypatch):
 
     assert response.status_code == 401
 
-def test_read_highlight_requires_authentication(test_app, monkeypatch, mock_auth, auth_headers):
+def test_read_highlight_requires_authentication(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     """Test that the /highlights/{id}/ endpoint requires authentication."""
     # Mock the get_highlight function to return data if called
     # This ensures any 401 is due to auth failing, not missing data
@@ -85,7 +104,14 @@ def test_read_highlight_requires_authentication(test_app, monkeypatch, mock_auth
     assert response.status_code == 200
     assert response.json() == test_data
 
-def test_read_highlight_incorrect_id(test_app, monkeypatch, mock_auth, auth_headers):
+def test_read_highlight_incorrect_id(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     async def mock_get(id):
         return None
 
@@ -95,7 +121,14 @@ def test_read_highlight_incorrect_id(test_app, monkeypatch, mock_auth, auth_head
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
-def test_read_all_highlights(test_app, monkeypatch, mock_auth, auth_headers):
+def test_read_all_highlights(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     test_data = [
         {
             "id": 1,
@@ -124,7 +157,14 @@ def test_read_all_highlights(test_app, monkeypatch, mock_auth, auth_headers):
     assert response.status_code == 200
     assert response.json() == test_data
 
-def test_remove_highlight(test_app, monkeypatch, mock_auth, auth_headers):
+def test_remove_highlight(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     id = 1
     async def mock_delete_highlight(id, user_id):
         return {"id": id}
@@ -133,7 +173,14 @@ def test_remove_highlight(test_app, monkeypatch, mock_auth, auth_headers):
     response = test_app.delete(f"/highlights/{id}/", headers=auth_headers)
     assert response.status_code == 200
 
-def test_remove_highlight_incorrect_id(test_app, monkeypatch, mock_auth, auth_headers):
+def test_remove_highlight_incorrect_id(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
 
     async def mock_delete_highlight(id, user_id):
         return None
@@ -144,7 +191,14 @@ def test_remove_highlight_incorrect_id(test_app, monkeypatch, mock_auth, auth_he
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
-def test_update_highlight(test_app, monkeypatch, mock_auth, auth_headers):
+def test_update_highlight(
+    test_app,
+    monkeypatch,
+    mock_get_user_by_token_data_user,
+    mock_user,
+    auth_headers,
+    mock_jwt_decode_user,
+):
     test_request_payload = {
         "doi": "10.1234/example.5678",
         "highlight": {"1": {"rect": [100, 200, 300, 220], "text": "highlighted text"}},

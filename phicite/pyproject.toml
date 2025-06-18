@@ -46,4 +46,5 @@ python-dotenv = "^1.1.0"
 pytest-xdist = "3.6.1"
 requests = "^2.32.3"
 pytest-asyncio = "^1.0.0"
+ipykernel = "^6.29.5"
 

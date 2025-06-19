@@ -13,7 +13,7 @@ class TextSummary(models.Model):
 SummarySchema = pydantic_model_creator(TextSummary)
 
 class PDFHighlight(models.Model):
-    doi = fields.CharField(max_length=255)
+    doi = fields.CharField(max_length=255, db_index=True)
     highlight = fields.JSONField()
     comment = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)

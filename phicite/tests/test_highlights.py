@@ -98,7 +98,7 @@ async def test_authenticated_user_can_read_highlight(authenticated_client_with_d
 
     single_highlight = test_highlights["single_highlight"][0]
 
-    response = await client.get(f"/highlights/{single_highlight['id']}/")
+    response = await client.get(f"/highlights/id/{single_highlight['id']}/")
     assert response.status_code == 200
     response_dict = response.json()
     for key in response_dict.keys():
@@ -114,7 +114,7 @@ async def test_unauthenticated_user_can_not_read_highlight(test_app_with_db, tes
 
     client.headers.pop("Authorization", None)
 
-    response = await client.get(f"/highlights/{single_highlight['id']}/")
+    response = await client.get(f"/highlights/id/{single_highlight['id']}/")
     assert response.status_code == 401
     
 
@@ -127,7 +127,7 @@ async def test_unauthenticated_user_can_read_public_highlight(test_app_with_db, 
 
     client.headers.pop("Authorization", None)
 
-    response = await client.get(f"/highlights/{single_highlight['id']}/public")
+    response = await client.get(f"/highlights/id/{single_highlight['id']}/public")
     assert response.status_code == 200
     response_dict = response.json()
     for key in response_dict.keys():
@@ -142,11 +142,11 @@ async def test_unauthenticated_user_tries_to_read_highlight_with_incorrect_id(te
 
     client.headers.pop("Authorization", None)
 
-    response = await client.get("/highlights/999/public")
+    response = await client.get("/highlights/id/999/public")
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
-    response = await client.get("/highlights/0/public")
+    response = await client.get("/highlights/id/0/public")
     assert response.status_code == 422
     assert response.json() == {
         "detail": [
@@ -165,11 +165,11 @@ async def test_authenticated_user_tries_to_read_highlight_with_incorrect_id(auth
 
     client, _ = authenticated_client_with_db
 
-    response = await client.get("/highlights/999/")
+    response = await client.get("/highlights/id/999/")
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
-    response = await client.get("/highlights/0/")
+    response = await client.get("/highlights/id/0/")
     assert response.status_code == 422
     assert response.json() == {
         "detail": [
@@ -219,6 +219,54 @@ async def test_unauthenticated_user_can_read_all_public_highlights(
             assert response_list[i][key] == highlight[key]
         assert "username" not in response_list[i]
 
+@pytest.mark.asyncio
+async def test_authenticated_user_can_read_all_highlights_for_a_doi(
+    authenticated_client_with_db, test_highlights
+):
+    doi = test_highlights["single_highlight"][0]["doi"]
+    retrieved_highlights = [test_highlights["single_highlight"][0],
+                            test_highlights["another_user_highlight"][0],
+                            test_highlights["multiple_highlights"][0]] 
+
+    client, _ = authenticated_client_with_db 
+    print(f"doi: {doi}")
+    response = await client.get(f"/highlights/doi/{doi}/")
+    print(f"response: {response}")
+    assert response.status_code == 200
+    response_list = response.json()
+    assert len(response_list) == len(retrieved_highlights)
+    for i, highlight in enumerate(retrieved_highlights):
+        for key in response_list[i].keys():
+            assert response_list[i][key] == highlight[key]
+
+    doi = "invalid-doi"
+    response = await client.get(f"/highlights/doi/{doi}/")
+    assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_unauthenticated_user_can_read_all_public_highlights_for_a_doi(
+    test_app_with_db, test_highlights
+):
+    doi = test_highlights["single_highlight"][0]["doi"]
+    retrieved_highlights = [test_highlights["single_highlight"][0],
+                            test_highlights["another_user_highlight"][0],
+                            test_highlights["multiple_highlights"][0]] 
+
+    client, _, _, _ = test_app_with_db
+    client.headers.pop("Authorization", None)
+    response = await client.get(f"/highlights/doi/{doi}/public")
+    assert response.status_code == 200
+    response_list = response.json()
+    assert len(response_list) == len(retrieved_highlights)
+    for i, highlight in enumerate(retrieved_highlights):
+        for key in response_list[i].keys():
+            assert response_list[i][key] == highlight[key]
+        assert "username" not in response_list[i]
+
+    doi = "invalid-doi"
+    response = await client.get(f"/highlights/doi/{doi}/public")
+    assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 async def test_authenticated_user_can_remove_their_highlight(
@@ -227,7 +275,7 @@ async def test_authenticated_user_can_remove_their_highlight(
     client, _ = authenticated_client_with_db
     single_highlight = test_highlights["single_highlight"][0]
 
-    response = await client.delete(f"/highlights/{single_highlight['id']}/")
+    response = await client.delete(f"/highlights/id/{single_highlight['id']}/")
     assert response.status_code == 200
     for key in response.json().keys():
         assert response.json()[key] == single_highlight[key]
@@ -247,7 +295,7 @@ async def test_authenticated_user_can_not_remove_another_user_highlight(
     print(f"another_user_highlight[username]: {another_user_highlight["username"]}")
     print(f"user[username]: {user['username']}")
 
-    response = await client.delete(f"/highlights/{another_user_highlight['id']}/")
+    response = await client.delete(f"/highlights/id/{another_user_highlight['id']}/")
     assert response.status_code == 403
     assert response.json()["detail"] == "Not authorized to delete this highlight"
 
@@ -257,11 +305,11 @@ async def test_authenticated_user_tries_to_remove_highlight_with_incorrect_id(
     authenticated_client_with_db,
 ):
     client, _ = authenticated_client_with_db
-    response = await client.delete("/highlights/999/")
+    response = await client.delete("/highlights/id/999/")
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
-    response = await client.delete("/highlights/0/")
+    response = await client.delete("/highlights/id/0/")
     assert response.status_code == 422
     assert response.json() == {
         "detail": [
@@ -282,7 +330,7 @@ async def test_unauthenticated_user_can_not_remove_highlight(
     client, _, _, _ = test_app_with_db
     single_highlight = test_highlights["single_highlight"][0]
     client.headers.pop("Authorization", None)
-    response = await client.delete(f"/highlights/{single_highlight['id']}/")
+    response = await client.delete(f"/highlights/id/{single_highlight['id']}/")
     assert response.status_code == 401
     highlight = await PDFHighlight.get(id=single_highlight["id"])
     assert highlight.id == single_highlight["id"]
@@ -299,7 +347,7 @@ async def test_authenticated_user_can_update_their_highlight(
         "highlight": {"1": {"rect": [100, 200, 300, 220], "text": "updated highlight"}},
         "comment": "Updated comment",
     }
-    response = await client.put(f"/highlights/{single_highlight['id']}/", json=update_payload)
+    response = await client.put(f"/highlights/id/{single_highlight['id']}/", json=update_payload)
     assert response.status_code == 200
     updated_highlight = await PDFHighlight.get(id=single_highlight["id"])
     assert updated_highlight.highlight == update_payload["highlight"]
@@ -347,7 +395,7 @@ async def test_authenticated_user_tries_to_update_highlight_with_invalid_payload
     authenticated_client_with_db, id, payload, status_code, detail
 ):
     client, _ = authenticated_client_with_db
-    response = await client.put(f"/highlights/{id}/", json=payload)
+    response = await client.put(f"/highlights/id/{id}/", json=payload)
     assert response.status_code == status_code
     if isinstance(detail, str):
         assert response.json()["detail"] == detail
@@ -368,7 +416,7 @@ async def test_authenticated_user_tries_to_update_highlight_with_doi_not_matchin
         "comment": "Updated comment",
     }
 
-    response = await client.put(f"/highlights/{single_highlight['id']}/", json=update_payload)
+    response = await client.put(f"/highlights/id/{single_highlight['id']}/", json=update_payload)
     assert response.status_code == 422
     assert response.json() == {
         "detail": [

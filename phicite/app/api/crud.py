@@ -221,6 +221,29 @@ async def get_all_highlights_public() -> List:
         return highlight_list
     return None
 
+async def get_highlights_for_doi(doi: str) -> Union[List, None]:
+    highlights = await PDFHighlight.filter(doi=doi).prefetch_related('user').all()
+    if highlights:
+        highlight_list = []
+        for highlight in highlights:
+            highlight_dict = dict(highlight)
+            highlight_dict['username'] = highlight.user.username
+            highlight_dict['created_at'] = str(highlight.created_at)
+            highlight_list.append(highlight_dict)
+        return highlight_list
+    return None
+
+async def get_highlights_for_doi_public(doi: str) -> Union[List, None]:
+    highlights = await PDFHighlight.filter(doi=doi).all()
+    if highlights:
+        highlight_list = []
+        for highlight in highlights:
+            highlight_dict = dict(highlight)
+            highlight_dict['created_at'] = str(highlight.created_at)
+            highlight_list.append(highlight_dict)
+        return highlight_list
+    return None
+
 
 async def delete_highlight(id: int, user_id: int) -> Union[dict, None]:
     highlight = await PDFHighlight.filter(id=id).prefetch_related('user').first()

@@ -523,6 +523,19 @@ async def test_highlights(setup_users):
                 }
             )
 
+        highlight_dois = [
+            single_highlight["doi"],
+            another_user_highlight["doi"],
+        ] + [highlight["doi"] for highlight in multiple_highlights]
+
+        assert highlight_dois == [
+            "10.1234/example.5678",
+            "10.1234/example.5678",
+            "10.1234/example.5678",
+            "10.1234/example.5679",
+            "10.1234/example.5680",
+        ]
+
         # Yield all highlight data structures
         yield {
             "single_highlight": [single_highlight],

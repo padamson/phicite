@@ -24,7 +24,35 @@ async def create_highlight(
     response_object = {"id": id, "doi": payload.doi, "created_at": str(created_at)}
     return response_object
 
-@router.get("/{id}/", response_model=HighlightResponseSchema)
+@router.get("/", response_model=list[HighlightResponseSchema])
+async def read_all_highlights(current_user: Annotated[UserSchema, Depends(get_current_active_user)]) -> list[HighlightResponseSchema]:
+    return await crud.get_all_highlights()
+
+@router.get("/public", response_model=list[HighlightResponseSchemaPublic])
+async def read_all_highlights_public() -> list[HighlightResponseSchemaPublic]:
+    return await crud.get_all_highlights_public()
+
+@router.get("/doi/{doi:path}/", response_model=list[HighlightResponseSchema])
+async def read_all_highlights_for_a_doi(
+    current_user: Annotated[UserSchema, Depends(get_current_active_user)], doi: str
+) -> list[HighlightResponseSchema]:
+    response = await crud.get_highlights_for_doi(doi)
+    if not response:
+        raise HTTPException(
+            status_code=404, detail=f"No highlights found for doi {doi}"
+        )
+    return response
+
+@router.get("/doi/{doi:path}/public", response_model=list[HighlightResponseSchemaPublic])
+async def read_all_highlights_for_a_doi_public(doi: str) -> list[HighlightResponseSchemaPublic]:
+    response = await crud.get_highlights_for_doi_public(doi)
+    if not response:
+        raise HTTPException(
+            status_code=404, detail=f"No highlights found for doi {doi}"
+        )
+    return response
+
+@router.get("/id/{id}/", response_model=HighlightResponseSchema)
 async def read_highlight(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
     id: int = Path(..., gt=0)
@@ -36,7 +64,7 @@ async def read_highlight(
     
     return highlight
 
-@router.get("/{id}/public", response_model=HighlightResponseSchemaPublic)
+@router.get("/id/{id}/public", response_model=HighlightResponseSchemaPublic)
 async def read_highlight_public(
     id: int = Path(..., gt=0)
 ) -> HighlightResponseSchemaPublic:
@@ -47,15 +75,8 @@ async def read_highlight_public(
     
     return response 
 
-@router.get("/", response_model=list[HighlightResponseSchema])
-async def read_all_highlights(current_user: Annotated[UserSchema, Depends(get_current_active_user)]) -> list[HighlightResponseSchema]:
-    return await crud.get_all_highlights()
 
-@router.get("/public", response_model=list[HighlightResponseSchemaPublic])
-async def read_all_highlights_public() -> list[HighlightResponseSchemaPublic]:
-    return await crud.get_all_highlights_public()
-
-@router.delete("/{id}/", response_model=HighlightDeleteResponseSchema)
+@router.delete("/id/{id}/", response_model=HighlightDeleteResponseSchema)
 async def delete_highlight(
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],
     id: int = Path(..., gt=0),
@@ -78,7 +99,7 @@ async def delete_highlight(
             }]
         )
 
-@router.put("/{id}/", response_model=HighlightCreateResponseSchema)
+@router.put("/id/{id}/", response_model=HighlightCreateResponseSchema)
 async def update_highlight(
     payload: HighlightPayloadSchema,
     current_user: Annotated[UserSchema, Depends(get_current_active_user)],

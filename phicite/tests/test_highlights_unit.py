@@ -72,7 +72,7 @@ def test_read_highlight_requires_authentication(
     auth_headers,
     mock_jwt_decode_user,
 ):
-    """Test that the /highlights/{id}/ endpoint requires authentication."""
+    """Test that the /highlights/id/{id}/ endpoint requires authentication."""
     # Mock the get_highlight function to return data if called
     # This ensures any 401 is due to auth failing, not missing data
     test_data = {
@@ -90,7 +90,7 @@ def test_read_highlight_requires_authentication(
     monkeypatch.setattr(crud, "get_highlight", mock_get)
     
     # Make request without authentication
-    response = test_app.get("/highlights/1/")
+    response = test_app.get("/highlights/id/1/")
     
     # Assert that we get a 401 Unauthorized response
     assert response.status_code == 401
@@ -98,7 +98,7 @@ def test_read_highlight_requires_authentication(
     assert "Not authenticated" in response.json()["detail"]
 
     # 4. Make request with valid authentication
-    response = test_app.get("/highlights/1/", headers=auth_headers)
+    response = test_app.get("/highlights/id/1/", headers=auth_headers)
     
     # Should now succeed
     assert response.status_code == 200
@@ -117,7 +117,7 @@ def test_read_highlight_incorrect_id(
 
     monkeypatch.setattr(crud, "get_highlight", mock_get)
 
-    response = test_app.get("/highlights/999/", headers=auth_headers)
+    response = test_app.get("/highlights/id/999/", headers=auth_headers)
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
@@ -170,7 +170,7 @@ def test_remove_highlight(
         return {"id": id}
     
     monkeypatch.setattr(crud, "delete_highlight", mock_delete_highlight)
-    response = test_app.delete(f"/highlights/{id}/", headers=auth_headers)
+    response = test_app.delete(f"/highlights/id/{id}/", headers=auth_headers)
     assert response.status_code == 200
 
 def test_remove_highlight_incorrect_id(
@@ -187,7 +187,7 @@ def test_remove_highlight_incorrect_id(
     
     monkeypatch.setattr(crud, "delete_highlight", mock_delete_highlight)
 
-    response = test_app.delete("/highlights/999/", headers=auth_headers)
+    response = test_app.delete("/highlights/id/999/", headers=auth_headers)
     assert response.status_code == 404
     assert response.json()["detail"] == "highlight not found"
 
@@ -213,7 +213,7 @@ def test_update_highlight(
         return test_response_payload
     monkeypatch.setattr(crud, "put_highlight", mock_put)
     response = test_app.put(
-        "/highlights/1/", 
+        "/highlights/id/1/", 
         json=test_request_payload,
         headers=auth_headers
     )
